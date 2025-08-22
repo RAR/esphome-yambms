@@ -21,7 +21,6 @@ substitutions:
   board_chip: "ESP32-S3"
   board_name: "Core S3"
   display_update_interval: "500ms"
-  display_timeout: "300s"
   # Interfaces GPIOs
   # uart_esp_1 (Port A)
   tx_pin_1: '2' 
@@ -152,7 +151,7 @@ lvgl:
   touchscreens:
     - my_touchscreen
   on_idle:
-    timeout: !lambda "return (${display_timeout} * 1000);"
+    timeout: 300s
     then:
       - logger.log: "LVGL is idle"
       - script.execute:
