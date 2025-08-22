@@ -152,7 +152,7 @@ lvgl:
   touchscreens:
     - my_touchscreen
   on_idle:
-    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    timeout: !lambda "return (${display_timeout} * 1000);"
     then:
       - logger.log: "LVGL is idle"
       - script.execute:
