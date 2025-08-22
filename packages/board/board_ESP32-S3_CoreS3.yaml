@@ -142,7 +142,6 @@ display:
     dc_pin: 35
     id: my_display
     update_interval: ${display_update_interval}
-    data_rate: 40Mhz
     rotation: ${display_rotation}
 
 lvgl:
