@@ -81,8 +81,8 @@ wifi:
   domain: !secret domain
 
 logger:
-  baud_rate: 0 # frees the 3rd UART and avoids some bugs like "WK2168 with canbus" or "BLE client with RS485 modbus"
-  hardware_uart: USB_SERIAL_JTAG
+#  baud_rate: 0 # frees the 3rd UART and avoids some bugs like "WK2168 with canbus" or "BLE client with RS485 modbus"
+#  hardware_uart: USB_SERIAL_JTAG
 
 light:
   # ESP Light used to see the inverter heartbeat
@@ -100,7 +100,6 @@ script:
       value: int
     then:
       - lambda: M5.Display.setBrightness(value);  
-
 spi:
   - id: cores3_spi_bus
     clk_pin: GPIO36
@@ -136,7 +135,6 @@ touchscreen:
                 value: 75
 
 display:
-  # Core S3 display
   - platform: m5cores3_display
     model: ILI9342
     dc_pin: 35
@@ -316,21 +314,21 @@ lvgl:
           line_width: 2
           line_color: 0x747575
           line_rounded: true
-       - label:
+      - label:
           id: can_status
           align: BOTTOM_LEFT
           text_font: roboto_20
           text: "CAN"
           y: -8
-          x: 10
+          x: 20
           text_color: 0xBF1327
-       - label:
+      - label:
           id: esp_status
           align: BOTTOM_RIGHT
           text_font: roboto_20
           text: "ESP"
           y: -8
-          x: -10
+          x: -20
           text_color: 0xBF1327                 
       - label:
           align: BOTTOM_LEFT
@@ -371,7 +369,7 @@ lvgl:
       border_color: 0xAEAFB0
       text_color: 0xFFFFFF
       width: 100%
-      height: 30 
+      height: 20 
   top_layer:
     widgets:
       - obj:
