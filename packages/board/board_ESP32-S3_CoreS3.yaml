@@ -21,6 +21,7 @@ substitutions:
   board_chip: "ESP32-S3"
   board_name: "Core S3"
   display_update_interval: "500ms"
+  display_timeout: "300s"
   # Interfaces GPIOs
   # uart_esp_1 (Port A)
   tx_pin_1: '2' 
@@ -36,6 +37,7 @@ substitutions:
   spi_miso_pin: '35'
   spi_clk_pin: '36'
   mcp2515_cs_pin: '6'
+
 
 packages:
   device_base: !include ../base/device_base.yaml
@@ -146,9 +148,9 @@ display:
 
 lvgl:
   displays:
-    - m5cores3_lcd
+    - my_display
   touchscreens:
-    - m5cores3_touch    
+    - my_touchscreen
   on_idle:
     timeout: !lambda "return (id(display_timeout).state * 1000);"
     then:
