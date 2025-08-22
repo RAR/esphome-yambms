@@ -316,6 +316,22 @@ lvgl:
           line_width: 2
           line_color: 0x747575
           line_rounded: true
+       - label:
+          id: can_status
+          align: BOTTOM_LEFT
+          text_font: roboto_20
+          text: "CAN"
+          y: -8
+          x: 10
+          text_color: 0xBF1327
+       - label:
+          id: esp_status
+          align: BOTTOM_RIGHT
+          text_font: roboto_20
+          text: "ESP"
+          y: -8
+          x: -10
+          text_color: 0xBF1327                 
       - label:
           align: BOTTOM_LEFT
           id: voltage_text
@@ -367,19 +383,4 @@ lvgl:
                 text_align: CENTER
                 text_color: 0xFFFFFF
                 text_font: roboto_15
-            - label:
-                id: lbl_CAN
-                x: 25
-                y: 5
-                align: top_left
-                text_font: roboto_12
-                text: "CAN"
-                text_color: 0xBF1327
-            - label:
-                id: lbl_ESP
-                x: 55
-                y: 5
-                align: top_left
-                text_font: roboto_12
-                text: "ESP"
-                text_color: 0xBF1327        
+
