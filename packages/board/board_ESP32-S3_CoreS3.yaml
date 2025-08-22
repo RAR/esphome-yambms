@@ -100,10 +100,10 @@ script:
       value: int
     then:
       - lambda: M5.Display.setBrightness(value);  
-spi:
-  - id: cores3_spi_bus
-    clk_pin: GPIO36
-    mosi_pin: GPIO37
+#spi:
+#  - id: cores3_spi_bus
+#    clk_pin: GPIO36
+#    mosi_pin: GPIO37
 
 i2c:
   - id: cores3_i2c_bus
