@@ -359,7 +359,8 @@ lvgl:
   style_definitions:
     - id: header_footer
       bg_color: 0x393B3B
-      bg_grad_color: 0x292828
+      #bg_grad_color: 0x292828
+      bg_grad_color: 0x000000
       bg_grad_dir: VER
       bg_opa: COVER
       border_opa: TRANSP
