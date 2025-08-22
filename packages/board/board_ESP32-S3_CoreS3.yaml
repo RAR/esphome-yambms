@@ -100,10 +100,6 @@ script:
       value: int
     then:
       - lambda: M5.Display.setBrightness(value);  
-#spi:
-#  - id: cores3_spi_bus
-#    clk_pin: GPIO36
-#    mosi_pin: GPIO37
 
 i2c:
   - id: cores3_i2c_bus
@@ -137,7 +133,9 @@ touchscreen:
 display:
   - platform: m5cores3_display
     model: ILI9342
-    dc_pin: 35
+    dc_pin: 
+      number: 35
+      allow_other_uses: true
     id: my_display
     update_interval: ${display_update_interval}
     rotation: ${display_rotation}

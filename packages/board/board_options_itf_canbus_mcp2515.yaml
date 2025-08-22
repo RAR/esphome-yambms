@@ -26,7 +26,9 @@ substitutions:
 spi:
   - id: bus_spi1
     mosi_pin: ${spi_mosi_pin}
-    miso_pin: ${spi_miso_pin}
+    miso_pin: 
+      number: ${spi_miso_pin}
+      allow_other_uses: true
     clk_pin: ${spi_clk_pin}
 
 canbus:
