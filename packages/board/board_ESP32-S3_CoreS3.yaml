@@ -161,7 +161,7 @@ display:
     dc_pin:
       number: 35
       allow_other_uses: true
-    #data_rate: 8000000.0
+    data_rate: 8000000.0
     reset_pin:
       aw9523: aw9523_1
       port: 1
