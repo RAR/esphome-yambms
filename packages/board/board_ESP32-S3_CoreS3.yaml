@@ -58,20 +58,13 @@ esphome:
       - -DBOARD_HAS_PSRAM
       - -mfix-esp32-psram-cache-issue
   libraries:
-    - m5stack/M5GFX@^0.1.12
     - m5stack/M5Unified@^0.1.12
-  on_boot:
-    priority: 600
-    then: 
-      - script.execute:
-          id: m5_display_set_brightness
-          value: 75    
 
 external_components:
   - source:
       type: git
       url: https://github.com/m5stack/M5CoreS3-Esphome
-    components: [ board_m5cores3, m5cores3_display, m5cores3_touchscreen ]      
+    components: [ board_m5cores3, m5cores3_touchscreen ]      
     refresh: 0s
 
 wifi:
@@ -91,16 +84,12 @@ light:
     id: esp_light
     output: esp_output
 
-script:
-  - id: draw_display
-    then:
-      - component.update: my_display
-  - id: m5_display_set_brightness
-    parameters:
-      value: int
-    then:
-      - lambda: M5.Display.setBrightness(value);  
-spi: 
+spi:
+  mosi_pin: ${spi_mosi_pin}
+  miso_pin: 
+    number: ${spi_miso_pin}
+    allow_other_uses: True
+  clk_pin: ${spi_clk_pin}
 
 i2c:
   - id: cores3_i2c_bus
@@ -109,7 +98,6 @@ i2c:
     scan: true
 
 output:
-# ESP32 board without LED
   - platform: template
     id: esp_output
     type: binary
@@ -120,24 +108,22 @@ touchscreen:
   - platform: m5cores3_touchscreen
     update_interval: 20ms
     id: my_touchscreen
-    on_release:
-      - if:
-          condition: lvgl.is_paused
-          then:
-            - logger.log: "LVGL resuming"
-            - lvgl.resume:
-            - lvgl.widget.redraw:
-            - script.execute:
-                id: m5_display_set_brightness
-                value: 75
-
+#    on_release:
+#      - if:
+#          condition: lvgl.is_paused
+#          then:
+#            - logger.log: "LVGL resuming"
+#            - lvgl.resume:
+#            - lvgl.widget.redraw
+            
 display:
-  - platform: m5cores3_display
+  - platform: ili9xxx
     model: ILI9342
+    id: my_display
     dc_pin: 
       number: 35
-      allow_other_uses: true
-    id: my_display
+      allow_other_uses: True
+    invert_colors: true
     update_interval: ${display_update_interval}
     rotation: ${display_rotation}
 
@@ -164,14 +150,14 @@ lvgl:
     - my_display
   touchscreens:
     - my_touchscreen
-  on_idle:
-    timeout: 300s
-    then:
-      - logger.log: "LVGL is idle"
-      - script.execute:
-          id: m5_display_set_brightness
-          value: 0
-      - lvgl.pause:
+#  on_idle:
+#    timeout: 300s
+#    then:
+#      - logger.log: "LVGL is idle"
+#      - script.execute:
+#          id: m5_display_set_brightness
+#          value: 0
+#      - lvgl.pause:
   pages:
     - id: main_page
       bg_color: 0x000000
