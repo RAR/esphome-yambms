@@ -49,6 +49,11 @@ esp32:
   cpu_frequency: 240MHz
   framework:
     type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
 
 esphome:
   platformio_options:
@@ -57,6 +62,14 @@ esphome:
     build_flags:
       - -DBOARD_HAS_PSRAM
       - -mfix-esp32-psram-cache-issue
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/RAR/esphome_m5stack_core_s3
+      ref: v202502
+    components: [ esp32_m5stack_core_s3, aw9523 ]
+    refresh: 0s
 
 wifi:
   id: my_network
@@ -76,11 +89,25 @@ light:
     id: esp_light
     output: esp_output
 
+spi:
+  mosi_pin: ${spi_mosi_pin}
+  clk_pin: ${spi_clk_pin}
+  miso_pin: 
+    number: ${spi_miso_pin}
+    allow_other_uses: true
+  id: cores3_spi_bus
+
 i2c:
   - id: cores3_i2c_bus
     sda: GPIO12
     scl: GPIO11
     scan: true
+
+aw9523:
+  id: aw9523_1
+  address: 0x58
+
+esp32_m5stack_core_s3:
 
 output:
   - platform: template
@@ -88,3 +115,270 @@ output:
     type: binary
     write_action:
       - logger.log: "Inverter Heartbeat Output"
+
+touchscreen:
+  - platform: ft63x6
+    i2c_id: cores3_i2c_bus
+    id: my_touchscreen
+            
+display:
+  - platform: mipi_spi
+    model: ILI9341
+    id: my_display
+    spi_id: cores3_spi_bus
+    cs_pin: 3
+    dc_pin:
+      number: 35
+      allow_other_uses: true
+    data_rate: 8000000.0
+    reset_pin:
+      aw9523: aw9523_1
+      port: 1
+      pin: 1
+      mode:
+        output: true    
+    invert_colors: true
+    update_interval: ${display_update_interval}
+    rotation: ${display_rotation}
+
+font:
+  - file: "gfonts://Roboto"
+    id: roboto_12
+    size: 12
+    bpp: 4
+  - file: "gfonts://Roboto"
+    id: roboto_15
+    size: 15    
+    bpp: 4
+  - file: "gfonts://Roboto"
+    id: roboto_20
+    size: 20
+    bpp: 4
+  - file: "gfonts://Roboto"
+    id: roboto_45
+    size: 45
+    bpp: 4    
+
+lvgl:
+  displays:
+    - my_display
+  touchscreens:
+    - my_touchscreen
+#  on_idle:
+#    timeout: 300s
+#    then:
+#      - logger.log: "LVGL is idle"
+#      - script.execute:
+#          id: m5_display_set_brightness
+#          value: 0
+#      - lvgl.pause:
+  pages:
+    - id: main_page
+      bg_color: 0x000000
+      widgets:
+      - obj:
+          height: 150
+          width: 150
+          align: BOTTOM_MID
+          bg_color: 0x000000
+          border_width: 0
+          pad_all: 4
+          y: -50
+          x: -75
+          widgets:
+            - meter:
+                height: 100%
+                width: 100%
+                border_width: 0
+                bg_opa: TRANSP
+                align: CENTER
+                scales:
+                  - range_from: -400
+                    range_to: 400
+                    angle_range: 180 # sets the total angle to 180 = starts mid left and ends mid right
+                    ticks:
+                      count: 0
+                    indicators:
+                      - line:
+                          id: current_needle
+                          width: 4
+                          r_mod: 20 # sets line length by this much difference from the scale default radius
+                          value: 0
+                          color: 0xFFFFFF
+                      - arc: # first half of the scale background
+                          color: 0xFF3000
+                          r_mod: 10 # radius difference from the scale default radius
+                          width: 18
+                          start_value: -400
+                          end_value: 0
+                      - arc: # second half of the scale background
+                          color: 0x00FF00
+                          r_mod: 10
+                          width: 18
+                          start_value: 0
+                          end_value: 400
+            - obj: # to cover the middle part of meter indicator line
+                height: 70
+                width: 70
+                radius: 73
+                align: CENTER
+                border_width: 0
+                bg_color: 0x000000
+                pad_all: 0                          
+            - label: # gauge numeric indicator
+                id: current_text
+                text_font: roboto_20
+                align: CENTER
+                text_color: 0xFFFFFF
+                y: -2
+                text: "0"
+      - obj:
+          height: 150
+          width: 150
+          align: BOTTOM_MID
+          bg_color: 0x000000
+          border_width: 0
+          pad_all: 4
+          y: -50
+          x: 75
+          widgets:
+            - meter:
+                height: 100%
+                width: 100%
+                border_width: 0
+                bg_opa: TRANSP
+                align: CENTER
+                scales:
+                  - range_from: -24
+                    range_to: 24
+                    angle_range: 180 # sets the total angle to 180 = starts mid left and ends mid right
+                    ticks:
+                      count: 0
+                    indicators:
+                      - line:
+                          id: power_needle
+                          width: 4
+                          r_mod: 20 # sets line length by this much difference from the scale default radius
+                          value: 0
+                          color: 0xFFFFFF
+                      - arc: # first half of the scale background
+                          color: 0xFF3000
+                          r_mod: 10 # radius difference from the scale default radius
+                          width: 18
+                          start_value: -24
+                          end_value: 0
+                      - arc: # second half of the scale background
+                          color: 0x00FF00
+                          r_mod: 10
+                          width: 18
+                          start_value: 0
+                          end_value: 24
+            - obj: # to cover the middle part of meter indicator line
+                height: 70
+                width: 70
+                radius: 73
+                align: CENTER
+                border_width: 0
+                bg_color: 0x000000
+                pad_all: 0                          
+            - label: # gauge numeric indicator
+                id: power_text
+                text_font: roboto_20
+                align: CENTER
+                text_color: 0xFFFFFF
+                y: -2
+                text: "0"
+      - line:
+          points:
+            - 10, 130
+            - 310, 130
+          line_width: 2
+          line_color: 0x747575
+          line_rounded: true        
+      - line:
+          points:
+            - 160, 130
+            - 160, 200
+          line_width: 2
+          line_color: 0x747575
+          line_rounded: true
+      - line:
+          points:
+            - 10, 237
+            - 80, 237
+            - 110, 200
+            - 210, 200
+            - 240, 237
+            - 310, 237
+          line_width: 2
+          line_color: 0x747575
+          line_rounded: true
+      - label:
+          id: can_status
+          align: BOTTOM_LEFT
+          text_font: roboto_20
+          text: "CAN"
+          y: -8
+          x: 20
+          text_color: 0xBF1327
+      - label:
+          id: esp_status
+          align: BOTTOM_RIGHT
+          text_font: roboto_20
+          text: "ESP"
+          y: -8
+          x: -20
+          text_color: 0xBF1327                 
+      - label:
+          align: BOTTOM_LEFT
+          id: voltage_text
+          text_font: roboto_45
+          text: "00.00v"
+          text_color: 0xFFFFFF
+          x: 13
+          y: -50
+      - label:
+          align: BOTTOM_RIGHT
+          id: soc_text
+          text_font: roboto_45
+          text: "00%"
+          text_color: 0xFFFFFF
+          x: -38
+          y: -50
+      - label:
+          align: BOTTOM_MID
+          id: charging_status_text
+          text_font: roboto_20
+          text: "Bulk"
+          y: -8
+          text_color: 0xFFFFFF
+            
+  style_definitions:
+    - id: header_footer
+      bg_color: 0x393B3B
+      #bg_grad_color: 0x292828
+      bg_grad_color: 0x000000
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_opa: TRANSP
+      radius: 5
+      pad_all: 0
+      pad_row: 0
+      pad_column: 0
+      border_color: 0xAEAFB0
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 20 
+  top_layer:
+    widgets:
+      - obj:
+          align: TOP_MID
+          styles: header_footer
+          widgets:
+            - label:
+                text: "YamBMS"
+                align: CENTER
+                text_align: CENTER
+                text_color: 0xFFFFFF
+                text_font: roboto_15
+
