@@ -100,6 +100,7 @@ script:
       value: int
     then:
       - lambda: M5.Display.setBrightness(value);  
+spi: 
 
 i2c:
   - id: cores3_i2c_bus
