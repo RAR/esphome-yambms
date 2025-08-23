@@ -122,8 +122,8 @@ touchscreen:
     id: my_touchscreen
             
 display:
-  - platform: mipi_spi
-    model: ILI9341
+  - platform: ili9xxx
+    model: M5Stack
     id: my_display
     spi_id: cores3_spi_bus
     cs_pin: 3
