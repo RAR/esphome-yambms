@@ -73,6 +73,12 @@ external_components:
       ref: v202502
     components: [ esp32_m5stack_core_s3, aw9523 ]
     refresh: 0s
+  - source: 
+      type: git
+      url: https://github.com/RAR/esphome-axp2101
+      ref: esp-idf
+    components: [ axp2101 ]    
+    refresh: 0s
 
 wifi:
   id: my_network
@@ -120,6 +126,20 @@ aw9523:
 
 esp32_m5stack_core_s3:
 
+sensor:
+  - platform: axp2101
+    model: M5CORE2
+    address: 0x34
+    i2c_id: cores3_i2c_bus
+    update_interval: 5s
+    brightness: 50%
+    battery_voltage:
+      name: "Battery Voltage"
+    battery_level:
+      name: "Battery Level"
+    battery_charging:
+      name: "Battery Charging"
+
 output:
   - platform: template
     id: esp_output
@@ -141,7 +161,7 @@ display:
     dc_pin:
       number: 35
       allow_other_uses: true
-    data_rate: 8000000.0
+    #data_rate: 8000000.0
     reset_pin:
       aw9523: aw9523_1
       port: 1
