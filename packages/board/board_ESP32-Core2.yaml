@@ -29,8 +29,8 @@ substitutions:
   tx_pin_2: '26'
   rx_pin_2: '36'
   # uart_esp_3 (Port C, Commu Stack Module RS485)
-  tx_pin_3: '13'
-  rx_pin_3: '14'
+  tx_pin_3: '14'
+  rx_pin_3: '13'
 
   spi_bus_id: core2_spi_bu
   mcp2515_cs_pin: '27'
