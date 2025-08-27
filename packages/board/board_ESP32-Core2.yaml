@@ -85,7 +85,7 @@ light:
     restore_mode: RESTORE_AND_ON
 
 binary_sensor:
-  - id: !extend inverter_com_status
+  - id: !extend inverter_communication_status
     on_state_change:
     - lvgl.label.update:
         id: can_status
