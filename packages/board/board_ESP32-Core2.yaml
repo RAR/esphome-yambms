@@ -41,8 +41,6 @@ packages:
   psram: !include board_options_PSRAM_quad_80Mhz.yaml
 
 esphome:
-  name: yambmsclient
-  friendly_name: YamBMSClient
   platformio_options:
     build_flags:
       - -DBOARD_HAS_PSRAM
