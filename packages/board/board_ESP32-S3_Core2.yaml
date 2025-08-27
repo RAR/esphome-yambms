@@ -20,7 +20,7 @@
 substitutions:
   board_chip: "ESP32"
   board_name: "M5Stack Core2"
-  display_update_interval: "500ms"
+  display_update_interval: "50ms"
   # Interfaces GPIOs
   # uart_esp_1 (Port A)
   tx_pin_1: '33'
@@ -31,11 +31,9 @@ substitutions:
   # uart_esp_3 (Port C, Commu Stack Module RS485)
   tx_pin_3: '14'
   rx_pin_3: '13'
-  # canbus_commu_stack_module
-  spi_mosi_pin: '37'
-  spi_miso_pin: '35'
-  spi_clk_pin: '36'
-  spi_bus_id: core2_spi_bus
+
+  spi_bus_id: core2_spi_bu
+  mcp2515_cs_pin: '27'
 
 packages:
   device_base: !include ../base/device_base.yaml
