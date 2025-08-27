@@ -84,6 +84,14 @@ light:
     default_transition_length: 0s
     restore_mode: RESTORE_AND_ON
 
+text_sensor:    
+  - id: !extend ${yambms_id}_charging_status
+    on_value:
+    - lvgl.label.update:
+        id: charging_status_text
+        text: !lambda |-
+          return x;
+
 sensor:
   - platform: axp2101
     model: M5CORE2
