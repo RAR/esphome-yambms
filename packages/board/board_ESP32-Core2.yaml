@@ -93,6 +93,44 @@ text_sensor:
           return x;
 
 sensor:
+  - id: !extend ${yambms_id}_battery_soc
+    on_value:
+    - lvgl.label.update:
+        id: soc_text
+        text:
+          format: "%.0f%%"
+          args: [ 'x' ]
+
+  - id: !extend ${yambms_id}_total_voltage
+    on_value:
+    - lvgl.label.update:
+        id: voltage_text
+        text:
+          format: "%.2fv"
+          args: [ 'x' ]
+
+  - id: !extend ${yambms_id}_current
+    on_value:
+    - lvgl.indicator.update:
+        id: current_needle
+        value: !lambda return x;
+    - lvgl.label.update:
+        id: current_text
+        text:
+          format: "%.1f a"
+          args: [ 'x' ]   
+
+  - id: !extend ${yambms_id}_power
+    on_value:
+    - lvgl.indicator.update:
+        id: power_needle
+        value: !lambda return x * 0.001;      
+    - lvgl.label.update: 
+        id: power_text
+        text:
+          format: "%.2f kw"
+          args: [ 'x' ]  
+
   - platform: axp2101
     model: M5CORE2
     i2c_id: core2_i2c_bus
