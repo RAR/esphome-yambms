@@ -85,7 +85,7 @@ light:
     restore_mode: RESTORE_AND_ON
 
 binary_sensor:
-  - id: !extend ${yambms_id}_inverter_communication_status
+  - id: !extend inverter_com_status
     on_state_change:
     - lvgl.label.update:
         id: lbl_CAN
@@ -95,7 +95,7 @@ binary_sensor:
           }
           return lv_color_hex(0xBF1327);  
 
-  - id: !extend ${yambms_id}_esp32_online_status
+  - id: !extend esp32_online_status
     on_state_change:
     - lvgl.label.update:
         id: lbl_ESP
