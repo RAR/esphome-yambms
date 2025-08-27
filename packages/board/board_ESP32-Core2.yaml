@@ -88,7 +88,7 @@ binary_sensor:
   - id: !extend inverter_com_status
     on_state_change:
     - lvgl.label.update:
-        id: lbl_CAN
+        id: can_status
         text_color: !lambda |-
           if (x) {
             return lv_color_hex(0x13BF13);
@@ -98,7 +98,7 @@ binary_sensor:
   - id: !extend esp32_online_status
     on_state_change:
     - lvgl.label.update:
-        id: lbl_ESP
+        id: esp_status
         text_color: !lambda |-
           if (x) {
             return lv_color_hex(0x13BF13);
