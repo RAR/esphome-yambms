@@ -35,6 +35,7 @@ substitutions:
   spi_mosi_pin: '37'
   spi_miso_pin: '35'
   spi_clk_pin: '36'
+  spi_bus_id: core2_spi_bus
 
 packages:
   device_base: !include ../base/device_base.yaml
@@ -118,7 +119,7 @@ i2c:
   scan: true
   
 spi:
-  id: core2_spi_bus
+  id: ${spi_bus_id}
   clk_pin: GPIO18
   mosi_pin: GPIO23
   miso_pin: GPIO38
@@ -146,7 +147,7 @@ display:
   - platform: ili9xxx
     model: M5Stack
     id: my_display
-    spi_id: core2_spi_bus
+    spi_id: ${spi_bus_id}
     cs_pin: GPIO05
     dc_pin: GPIO15
     data_rate: 8000000.0
