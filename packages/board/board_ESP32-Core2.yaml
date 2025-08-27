@@ -84,6 +84,27 @@ light:
     default_transition_length: 0s
     restore_mode: RESTORE_AND_ON
 
+binary_sensor:
+  - id: !extend ${yambms_id}_inverter_communication_status
+    on_state_change:
+    - lvgl.label.update:
+        id: lbl_CAN
+        text_color: !lambda |-
+          if (x) {
+            return lv_color_hex(0x13BF13);
+          }
+          return lv_color_hex(0xBF1327);  
+
+  - id: !extend ${yambms_id}_esp32_online_status
+    on_state_change:
+    - lvgl.label.update:
+        id: lbl_ESP
+        text_color: !lambda |-
+          if (x) {
+            return lv_color_hex(0x13BF13);
+          }
+          return lv_color_hex(0xBF1327); 
+
 text_sensor:    
   - id: !extend ${yambms_id}_charging_status
     on_value:
