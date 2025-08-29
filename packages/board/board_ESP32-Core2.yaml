@@ -147,9 +147,10 @@ sensor:
         value: !lambda return x * 0.001;      
     - lvgl.label.update: 
         id: power_text
-        text:
-          format: "%.2f kw"
-          args: [ 'x' ]  
+        text: !lambda |-
+          static char buf[10];
+          snprintf(buf, 10, "%.2f kw", (x * 0.001));
+          return buf;
 
   - platform: axp2101
     model: M5CORE2
