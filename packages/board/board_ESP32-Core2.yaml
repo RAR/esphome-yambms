@@ -32,7 +32,7 @@ substitutions:
   tx_pin_3: '14'
   rx_pin_3: '13'
 
-  spi_bus_id: core2_spi_bu
+  spi_bus_id: core2_spi_bus
   mcp2515_cs_pin: '27'
 
 packages:
@@ -53,13 +53,13 @@ esp32:
   flash_size: 16MB
   cpu_frequency: 240MHz
 
-#external_components:
-#  - source:
-#      type: git
-#      url: https://github.com/RAR/esphome-axp2101
-#      ref: main
-#    refresh: 0s
-#    components: [ axp2101 ]
+external_components:
+  - source:
+      type: git
+      url: https://github.com/RAR/esphome-axp2101
+      ref: main
+    refresh: 0s
+    components: [ axp2101 ]
 
 wifi:
   id: my_network
@@ -69,6 +69,18 @@ wifi:
 
 logger:
 
+i2c:
+  id: core2_i2c_bus
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+  
+spi:
+  id: ${spi_bus_id}
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO38
+
 light:
   # ESP Light used to see the inverter heartbeat
   # Internal : only specifying an id without a name will implicitly set this to true.
@@ -76,12 +88,11 @@ light:
     id: esp_light
     output: esp_output
 
-#  - platform: monochromatic
-#    name: "LCD Backlight"
-#    id: display_backlight
-#    output: display_backlight_output
-#    default_transition_length: 0s
-#    restore_mode: RESTORE_AND_ON
+number:
+  - platform: axp2101
+    axp2101_id: axp2101_component
+    backlight:
+      name: "Backlight Brightness"
 
 #binary_sensor:
 #  - id: !extend inverter_com_status
@@ -152,18 +163,25 @@ sensor:
 #          snprintf(buf, 10, "%.2f kw", (x * 0.001));
 #          return buf;
 
-#  - platform: axp2101
-#    model: M5CORE2
-#    i2c_id: core2_i2c_bus
-#    id: core2_power
-#    update_interval: 30s
-#    battery_voltage:
-#      name: "Battery Voltage"
-#    battery_level:
-#      name: "Battery Level"
-#    battery_charging:
-#      name: "Battery Charging"
-    
+  - platform: axp2101
+    i2c_id: core2_i2c_bus
+    model: M5CORE2
+    address: 0x34
+    brightness: 100%
+    battery_voltage:
+      name: "Battery Voltage"
+    battery_level:
+      name: "Battery Level"
+    battery_charging:
+      name: "Battery Charging"
+    vbus_voltage:
+      name: "USB Voltage"
+    vbus_connected:
+      name: "USB Connected"
+    temperature:
+      name: "PMU Temperature"
+
+
   - platform: ina3221
     i2c_id: core2_i2c_bus
     channel_1:
@@ -177,24 +195,16 @@ sensor:
       shunt_voltage:
         name: "System Shunt Voltage"
 
-i2c:
-  id: core2_i2c_bus
-  sda: GPIO21
-  scl: GPIO22
-  scan: true
-  
-spi:
-  id: ${spi_bus_id}
-  clk_pin: GPIO18
-  mosi_pin: GPIO23
-  miso_pin: GPIO38
-
 output:
   - platform: template
     id: esp_output
     type: binary
     write_action:
       - logger.log: "Inverter Heartbeat Output"
+
+axp2101:
+  id: axp2101_component
+  update_interval: 60s
 
 #  - platform: template
 #    id: display_backlight_output
