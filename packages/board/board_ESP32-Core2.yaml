@@ -333,7 +333,8 @@ lvgl:
                           id: power_needle
                           width: 4
                           r_mod: 20 # sets line length by this much difference from the scale default radius
-                          value: 0                          color: 0xFFFFFF
+                          value: 0                          
+                          color: 0xFFFFFF
                       - arc: # first half of the scale background
                           color: 0xFF3000
                           r_mod: 10 # radius difference from the scale default radius
