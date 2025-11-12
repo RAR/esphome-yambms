@@ -342,7 +342,7 @@ lvgl:
                           start_value: -24
                           end_value: 0
                       - arc: # second half of the scale background
-                         # color: 0x00FF00
+                          color: 0x00FF00
                           r_mod: 10
                           width: 18
                           start_value: 0
