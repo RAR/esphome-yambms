@@ -164,10 +164,7 @@ sensor:
           return buf;
 
   - platform: axp2101
-    i2c_id: core2_i2c_bus
-    model: M5CORE2
-    address: 0x34
-    brightness: 100%
+    axp2101_id: axp2101_component
     battery_voltage:
       name: "Battery Voltage"
     battery_level:
@@ -205,6 +202,7 @@ output:
 axp2101:
   id: axp2101_component
   update_interval: 60s
+  model: M5CORE2
 
 touchscreen:
   - platform: ft63x6
