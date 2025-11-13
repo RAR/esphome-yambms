@@ -93,6 +93,9 @@ number:
     axp2101_id: axp2101_component
     backlight:
       name: "Backlight Brightness"
+    charging_led_mode:
+      name: "Charging LED Mode"
+      # Modes: 0=Off, 1=Blink 1Hz, 2=Blink 4Hz, 3=On, 4=Auto (controlled by charger)
 
 binary_sensor:
   - id: !extend inverter_com_status
