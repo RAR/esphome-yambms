@@ -204,20 +204,12 @@ sensor:
     protection_bitmask:
       id: bms${bms_id}_protection_bitmask
       name: "${name} ${bms_name} protection bitmask"
-  
-  # Required sensors - min/max voltage cell numbers (calculated by component)
-  - platform: template
-    name: "${name} ${bms_name} min voltage cell"
-    id: bms${bms_id}_min_voltage_cell
-    accuracy_decimals: 0
-    lambda: return 0;  # Placeholder, calculated by component
-
-  - platform: template
-    name: "${name} ${bms_name} max voltage cell"
-    id: bms${bms_id}_max_voltage_cell
-    accuracy_decimals: 0
-    lambda: return 0;  # Placeholder, calculated by component
-
+    min_voltage_cell:
+      id: bms${bms_id}_min_voltage_cell
+      name: "${name} ${bms_name} min voltage cell"
+    max_voltage_cell:
+      id: bms${bms_id}_max_voltage_cell
+      name: "${name} ${bms_name} max voltage cell"
   # Required sensors cannot be retrieved from BMS
   - platform: template
     id: bms${bms_id}_bms_balance_trigger_voltage
