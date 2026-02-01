@@ -1,0 +1,497 @@
+# Updated : 2026.02.01
+# Version : 1.0.0
+# GitHub  : https://github.com/Sleeper85/esphome-yambms
+
+# YamBMS ( Yet another multi-BMS Merging Solution )
+
+# This YAML is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
+
+# +--------------------------------------+
+# | BLE Server Configuration             |
+# +--------------------------------------+
+# This file configures a BLE GATT server to expose BMS data
+# as an alternative to Modbus communication.
+#
+# Service UUID: Custom YamBMS BMS Service
+# Each BMS data point is exposed as a characteristic with notify support.
+#
+# Required substitutions:
+#   bms_id: The BMS ID number
+#   ble_service_uuid: The service UUID (default provided)
+#   ble_notify_interval: Interval for notify updates (default: 1s)
+
+substitutions:
+  # YamBMS BMS Service UUID (base UUID for the service)
+  # You can customize this per BMS if needed
+  ble_service_uuid: "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+  ble_notify_interval: "1s"
+
+esp32_ble_server:
+  manufacturer: "YamBMS"
+  model: "BMS ${bms_id}"
+  services:
+    - uuid: ${ble_service_uuid}
+      advertise: true
+      characteristics:
+        # Characteristic 1: Online Status (1 byte: 0/1)
+        - id: bms${bms_id}_ble_online_status
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2601"
+          description: "Online Status"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_online_status).state ? 1 : 0)};
+
+        # Characteristic 2: Charging Allowed (1 byte: 0/1)
+        - id: bms${bms_id}_ble_charging_allowed
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2602"
+          description: "Charging Allowed"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_charging_allowed).state ? 1 : 0)};
+
+        # Characteristic 3: Discharging Allowed (1 byte: 0/1)
+        - id: bms${bms_id}_ble_discharging_allowed
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2603"
+          description: "Discharging Allowed"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_discharging_allowed).state ? 1 : 0)};
+
+        # Characteristic 4: Equalizing/Balancing (1 byte: 0/1)
+        - id: bms${bms_id}_ble_equalizing
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2604"
+          description: "Equalizing"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_equalizing).state ? 1 : 0)};
+
+        # Characteristic 5: Total Voltage (4 bytes: uint32_t in mV)
+        - id: bms${bms_id}_ble_total_voltage
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2605"
+          description: "Total Voltage mV"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint32_t val = static_cast<uint32_t>(id(bms${bms_id}_total_voltage).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF),
+                static_cast<uint8_t>((val >> 16) & 0xFF),
+                static_cast<uint8_t>((val >> 24) & 0xFF)
+              };
+
+        # Characteristic 6: Current (4 bytes: int32_t in mA, signed)
+        - id: bms${bms_id}_ble_current
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2606"
+          description: "Current mA"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              int32_t val = static_cast<int32_t>(id(bms${bms_id}_current).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF),
+                static_cast<uint8_t>((val >> 16) & 0xFF),
+                static_cast<uint8_t>((val >> 24) & 0xFF)
+              };
+
+        # Characteristic 7: Power (4 bytes: int32_t in mW, signed)
+        - id: bms${bms_id}_ble_power
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2607"
+          description: "Power mW"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              int32_t val = static_cast<int32_t>(id(bms${bms_id}_power).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF),
+                static_cast<uint8_t>((val >> 16) & 0xFF),
+                static_cast<uint8_t>((val >> 24) & 0xFF)
+              };
+
+        # Characteristic 8: Battery SoC (2 bytes: uint16_t in %)
+        - id: bms${bms_id}_ble_battery_soc
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2608"
+          description: "Battery SoC %"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_battery_soc).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 9: Battery Capacity (2 bytes: uint16_t in Ah)
+        - id: bms${bms_id}_ble_battery_capacity
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2609"
+          description: "Battery Capacity Ah"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_battery_capacity).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 10: Battery Capacity Remaining (2 bytes: uint16_t in Ah)
+        - id: bms${bms_id}_ble_battery_capacity_remaining
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260a"
+          description: "Battery Capacity Remaining Ah"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_battery_capacity_remaining).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 11: Charging Cycles (2 bytes: uint16_t)
+        - id: bms${bms_id}_ble_charging_cycles
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260b"
+          description: "Charging Cycles"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_charging_cycles).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 12: Max Charge Current (2 bytes: uint16_t in A)
+        - id: bms${bms_id}_ble_max_charge_current
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260c"
+          description: "Max Charge Current A"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_max_charge_current).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 13: Max Discharge Current (2 bytes: uint16_t in A)
+        - id: bms${bms_id}_ble_max_discharge_current
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260d"
+          description: "Max Discharge Current A"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_max_discharge_current).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 14: Max Cell Voltage (2 bytes: uint16_t in mV)
+        - id: bms${bms_id}_ble_max_cell_voltage
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260e"
+          description: "Max Cell Voltage mV"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_max_cell_voltage).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 15: Max Voltage Cell Number (2 bytes: uint16_t)
+        - id: bms${bms_id}_ble_max_voltage_cell
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260f"
+          description: "Max Voltage Cell"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_max_voltage_cell).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 16: Min Cell Voltage (2 bytes: uint16_t in mV)
+        - id: bms${bms_id}_ble_min_cell_voltage
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2610"
+          description: "Min Cell Voltage mV"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_min_cell_voltage).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 17: Min Voltage Cell Number (2 bytes: uint16_t)
+        - id: bms${bms_id}_ble_min_voltage_cell
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2611"
+          description: "Min Voltage Cell"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_min_voltage_cell).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 18: Min Temperature (2 bytes: int16_t in 0.1°C, signed)
+        - id: bms${bms_id}_ble_min_temperature
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2612"
+          description: "Min Temperature 0.1C"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              int16_t val = static_cast<int16_t>(id(bms${bms_id}_min_temperature).state * 10);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 19: Min Temperature Sensor Number (2 bytes: uint16_t)
+        - id: bms${bms_id}_ble_min_temperature_sensor
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2613"
+          description: "Min Temperature Sensor"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_min_temperature_sensor).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 20: Max Temperature (2 bytes: int16_t in 0.1°C, signed)
+        - id: bms${bms_id}_ble_max_temperature
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2614"
+          description: "Max Temperature 0.1C"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              int16_t val = static_cast<int16_t>(id(bms${bms_id}_max_temperature).state * 10);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 21: Max Temperature Sensor Number (2 bytes: uint16_t)
+        - id: bms${bms_id}_ble_max_temperature_sensor
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2615"
+          description: "Max Temperature Sensor"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_max_temperature_sensor).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 22: Cell OVP (2 bytes: uint16_t in mV)
+        - id: bms${bms_id}_ble_cell_ovp
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2616"
+          description: "Cell OVP mV"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_cell_ovp).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 23: Cell UVP (2 bytes: uint16_t in mV)
+        - id: bms${bms_id}_ble_cell_uvp
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2617"
+          description: "Cell UVP mV"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_cell_uvp).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 24: Balance Trigger Voltage (2 bytes: uint16_t in mV)
+        - id: bms${bms_id}_ble_balance_trigger_voltage
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2618"
+          description: "Balance Trigger Voltage mV"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_balance_trigger_voltage).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 25: Errors Bitmask (2 bytes: uint16_t)
+        - id: bms${bms_id}_ble_errors_bitmask
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2619"
+          description: "Errors Bitmask"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_yambms_errors_bitmask).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+        # Characteristic 26: Charging Power (4 bytes: uint32_t in mW)
+        - id: bms${bms_id}_ble_charging_power
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b261a"
+          description: "Charging Power mW"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint32_t val = static_cast<uint32_t>(id(bms${bms_id}_charging_power).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF),
+                static_cast<uint8_t>((val >> 16) & 0xFF),
+                static_cast<uint8_t>((val >> 24) & 0xFF)
+              };
+
+        # Characteristic 27: Discharging Power (4 bytes: uint32_t in mW)
+        - id: bms${bms_id}_ble_discharging_power
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b261b"
+          description: "Discharging Power mW"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint32_t val = static_cast<uint32_t>(id(bms${bms_id}_discharging_power).state * 1000);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF),
+                static_cast<uint8_t>((val >> 16) & 0xFF),
+                static_cast<uint8_t>((val >> 24) & 0xFF)
+              };
+
+        # Characteristic 28: Battery SoH (2 bytes: uint16_t in %)
+        - id: bms${bms_id}_ble_battery_soh
+          uuid: "beb5483e-36e1-4688-b7f5-ea07361b261c"
+          description: "Battery SoH %"
+          read: true
+          notify: true
+          value:
+            data: !lambda |-
+              uint16_t val = static_cast<uint16_t>(id(bms${bms_id}_battery_soh).state);
+              return std::vector<uint8_t>{
+                static_cast<uint8_t>(val & 0xFF),
+                static_cast<uint8_t>((val >> 8) & 0xFF)
+              };
+
+# +--------------------------------------+
+# | Interval to trigger notifications    |
+# +--------------------------------------+
+# This interval triggers notify for all characteristics
+# to push updates to connected BLE clients.
+
+interval:
+  - interval: ${ble_notify_interval}
+    then:
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_online_status
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_charging_allowed
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_discharging_allowed
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_equalizing
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_total_voltage
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_current
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_power
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_battery_soc
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_battery_capacity
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_battery_capacity_remaining
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_charging_cycles
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_max_charge_current
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_max_discharge_current
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_max_cell_voltage
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_max_voltage_cell
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_min_cell_voltage
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_min_voltage_cell
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_min_temperature
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_min_temperature_sensor
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_max_temperature
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_max_temperature_sensor
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_cell_ovp
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_cell_uvp
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_balance_trigger_voltage
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_errors_bitmask
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_charging_power
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_discharging_power
+      - ble_server.characteristic.notify:
+          id: bms${bms_id}_ble_battery_soh
