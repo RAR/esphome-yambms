@@ -100,14 +100,6 @@ spi:
     allow_other_uses: true
   id: cores3_spi_bus
 
-canbus:
-  - platform: mcp2515
-    spi_id: cores3_spi_bus
-    id: ${canbus_node_id}
-    cs_pin: ${mcp2515_cs_pin}
-    can_id: ${mcp2515_canbus_id}
-    bit_rate: ${mcp2515_canbus_bitrate}
-
 i2c:
   - id: cores3_i2c_bus
     sda: GPIO12
