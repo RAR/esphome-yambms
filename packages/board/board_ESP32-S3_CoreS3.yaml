@@ -171,11 +171,11 @@ display:
       allow_other_uses: true
     data_rate: 8000000.0
     reset_pin:
-      aw9523: aw9523_1
+      aw9523: aw9523_component
       port: 1
       pin: 1
       mode:
-        output: true    
+        output: true
     invert_colors: true
     update_interval: ${display_update_interval}
     rotation: ${display_rotation}
