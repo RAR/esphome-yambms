@@ -74,7 +74,7 @@ ble_client:
       then:
         - logger.log:
             level: INFO
-            format: "BMS ${bms_id} BLE server connected!"
+            format: "BMS ${bms_id} BLE server connected! Starting service discovery..."
         - lambda: |-
             id(bms${bms_id}_ble_connected) = true;
     on_disconnect:
@@ -145,10 +145,15 @@ sensor:
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2601"
     notify: true
     lambda: |-
+      ESP_LOGD("ble_client", "Online status received: size=%d, value=%d", x.size(), x.size() > 0 ? x[0] : -1);
       if (x.size() >= 1) return static_cast<float>(x[0]);
       return 0.0f;
     on_value:
       then:
+        - logger.log:
+            level: INFO
+            format: "BLE Client: Online status = %.0f"
+            args: ['x']
         - lambda: |-
             id(bms${bms_id}_online_status).publish_state(x > 0);
 
@@ -161,8 +166,7 @@ sensor:
     service_uuid: ${ble_svc_status_uuid}
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2602"
     notify: true
-    lambda: |-
-      if (x.size() >= 1) return static_cast<float>(x[0]);
+    lambda: |-      ESP_LOGD("ble_client", "Charging status received: size=%d", x.size());      if (x.size() >= 1) return static_cast<float>(x[0]);
       return 0.0f;
     on_value:
       then:
@@ -257,7 +261,15 @@ sensor:
     unit_of_measurement: V
     device_class: voltage
     lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
+      ESP_LOGD("ble_client", "Voltage notification received: size=%d", x.size());
+      if (x.size() >= 4) {
+        uint32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
+        ESP_LOGD("ble_client", "Voltage raw=%u, converted=%.2fV", val, val * 0.001f);
+      }
+      if (!id(bms${bms_id}_online_status).state) {
+        ESP_LOGD("ble_client", "Voltage: online_status is false, returning NAN");
+        return NAN;
+      }
       if (x.size() >= 4) {
         uint32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
         return val * 0.001f;
