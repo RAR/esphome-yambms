@@ -133,20 +133,4 @@ output:
     id: esp_output
     type: binary
     write_action:
-      - logger.log: "Inverter Heartbeat Output"    
-
-sensor:
-  - platform: axp2101
-    axp2101_id: axp2101_component
-    battery_voltage:
-      name: "Battery Voltage"
-    battery_level:
-      name: "Battery Level"
-    battery_charging:
-      name: "Battery Charging"
-    vbus_voltage:
-      name: "USB Voltage"
-    vbus_connected:
-      name: "USB Connected"
-    temperature:
-      name: "PMU Temperature"
+      - logger.log: "Inverter Heartbeat Output"
