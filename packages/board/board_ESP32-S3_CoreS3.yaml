@@ -31,13 +31,6 @@ substitutions:
   # uart_esp_3 (Port C, Commu Stack Module RS485)
   tx_pin_3: '17'
   rx_pin_3: '18'
-  # canbus_commu_stack_module
-  spi_mosi_pin: '37'
-  spi_clk_pin: '36'
-  mcp2515_cs_pin: '6'
-  mcp2515_canbus_id: '2'
-  mcp2515_canbus_bitrate: '500kbps'
-  canbus_node_id: canbus_cores3
 
 packages:
   device_base: !include ../base/device_base.yaml
@@ -94,9 +87,9 @@ light:
     output: esp_output
 
 spi:
-  mosi_pin: ${spi_mosi_pin}
-  clk_pin: ${spi_clk_pin}
-  id: cores3_spi_bus
+  - id: spi_bus
+    clk_pin: GPIO36
+    mosi_pin: GPIO37
 
 i2c:
   - id: cores3_i2c_bus
