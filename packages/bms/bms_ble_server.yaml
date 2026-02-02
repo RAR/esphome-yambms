@@ -1,5 +1,5 @@
 # Updated : 2025.02.02
-# Version : 3.0.0
+# Version : 3.1.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -27,7 +27,17 @@
 # Each service exposes ONE characteristic with all data packed together.
 # This reduces GATT attribute count for better compatibility.
 #
-# Services:
+# MULTI-BMS SUPPORT (v3.1):
+# Characteristic UUIDs embed bms_id to allow multiple BMSes per server.
+# Format: beb5483e-36e1-4688-b7f5-ea0736${bms_id}b26XX
+# A single client BLE connection can access all BMSes on one server.
+#
+# Usage for multi-BMS:
+#   1. Include this package once per BMS with unique bms_id
+#   2. All BMSes share the same BLE server and services
+#   3. Each BMS has unique characteristic UUIDs based on bms_id
+#
+# Services (shared across BMSes):
 #   1. Status Service  - 6 bytes packed status data
 #   2. Battery Service - 40 bytes packed battery data
 #   3. Cell Service    - 8 bytes packed cell data
@@ -35,7 +45,7 @@
 #   5. Limits Service  - 10 bytes packed limits data
 #
 # Required substitutions:
-#   bms_id: The BMS ID number
+#   bms_id: The BMS ID number (1-9 for multi-BMS, any for single)
 #   ble_notify_interval: Interval for notify updates (default: 1s)
 
 substitutions:
@@ -83,8 +93,8 @@ esp32_ble_server:
       advertise: true
       characteristics:
         - id: bms${bms_id}_ble_status_packet
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2601"
-          description: "Status Packet"
+          uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2601"
+          description: "BMS ${bms_id} Status"
           read: true
           notify: true
           value:
@@ -121,8 +131,8 @@ esp32_ble_server:
       advertise: false
       characteristics:
         - id: bms${bms_id}_ble_battery_packet
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2605"
-          description: "Battery Packet"
+          uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2605"
+          description: "BMS ${bms_id} Battery"
           read: true
           notify: true
           value:
@@ -185,8 +195,8 @@ esp32_ble_server:
       advertise: false
       characteristics:
         - id: bms${bms_id}_ble_cell_packet
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260e"
-          description: "Cell Packet"
+          uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b260e"
+          description: "BMS ${bms_id} Cell"
           read: true
           notify: true
           value:
@@ -223,8 +233,8 @@ esp32_ble_server:
       advertise: false
       characteristics:
         - id: bms${bms_id}_ble_temp_packet
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2612"
-          description: "Temperature Packet"
+          uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2612"
+          description: "BMS ${bms_id} Temperature"
           read: true
           notify: true
           value:
@@ -266,8 +276,8 @@ esp32_ble_server:
       advertise: false
       characteristics:
         - id: bms${bms_id}_ble_limits_packet
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2616"
-          description: "Limits Packet"
+          uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2616"
+          description: "BMS ${bms_id} Limits"
           read: true
           notify: true
           value:
