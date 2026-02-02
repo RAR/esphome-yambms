@@ -147,24 +147,22 @@ touchscreen:
   - platform: ft63x6
     i2c_id: cores3_i2c_bus
     id: my_touchscreen
-            
+
 display:
-  - platform: ili9xxx
-    model: M5Stack
-    id: my_display
-    spi_id: cores3_spi_bus
-    cs_pin: 3
-    dc_pin: 35
+  - platform: mipi_spi
+    model: M5CORE
+    dc_pin: GPIO35
     reset_pin:
       aw9523: aw9523_component
       port: 1
       pin: 1
       mode:
         output: true
+    cs_pin: GPIO3
+    data_rate: 40MHz
     invert_colors: true
-    update_interval: ${display_update_interval}
-    rotation: ${display_rotation}
-
+    id: my_display
+            
 font:
   - file: "gfonts://Roboto"
     id: roboto_12
