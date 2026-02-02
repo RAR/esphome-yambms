@@ -106,7 +106,7 @@ globals:
     initial_value: "false"
 
 # +========================================+
-# | BINARY SENSORS (from Status packet)   |
+# | BINARY SENSORS                         |
 # +========================================+
 
 binary_sensor:
@@ -125,10 +125,11 @@ binary_sensor:
     device_id: bms_${bms_id}
     name: "Discharging allowed"
 
+  # Note: bms_equalizing with _bms_ prefix - balancer wraps this
   - platform: template
     id: bms${bms_id}_bms_equalizing
     device_id: bms_${bms_id}
-    name: "balancing"
+    name: "BMS balancing"
 
 # +========================================+
 # | SENSOR READERS (packed characteristics)|
@@ -168,7 +169,7 @@ sensor:
         - lambda: |-
             id(bms${bms_id}_yambms_errors_bitmask).publish_state(x);
 
-  # Errors bitmask sensor (published by status reader)
+  # Errors bitmask sensor
   - platform: template
     id: bms${bms_id}_yambms_errors_bitmask
     device_id: bms_${bms_id}
@@ -232,7 +233,7 @@ sensor:
       // Return voltage as the sensor value
       return voltage;
 
-  # Battery sensors (published by battery reader)
+  # Battery sensors
   - platform: template
     id: bms${bms_id}_total_voltage
     device_id: bms_${bms_id}
@@ -378,7 +379,7 @@ sensor:
       // Return max voltage as sensor value
       return max_v * 0.001f;
 
-  # Cell sensors (published by cell reader)
+  # Cell sensors
   - platform: template
     id: bms${bms_id}_max_cell_voltage
     device_id: bms_${bms_id}
@@ -459,7 +460,7 @@ sensor:
       // Return max temp as sensor value
       return max_temp;
 
-  # Temperature sensors (published by temp reader)
+  # Temperature sensors
   - platform: template
     id: bms${bms_id}_min_temperature
     device_id: bms_${bms_id}
@@ -533,12 +534,12 @@ sensor:
       id(bms${bms_id}_max_discharge_current).publish_state(max_discharge * 0.1f);
       id(bms${bms_id}_cell_ovp).publish_state(ovp * 0.001f);
       id(bms${bms_id}_cell_uvp).publish_state(uvp * 0.001f);
-      id(bms${bms_id}_balance_trigger_voltage).publish_state(balance * 0.001f);
+      id(bms${bms_id}_bms_balance_trigger_voltage).publish_state(balance * 0.001f);
       
       // Return max charge current as sensor value
       return max_charge * 0.1f;
 
-  # Limits sensors (published by limits reader)
+  # Limits sensors
   - platform: template
     id: bms${bms_id}_max_charge_current
     device_id: bms_${bms_id}
@@ -587,10 +588,11 @@ sensor:
         - throttle: 60s
         - delta: 0.001
 
+  # Note: _bms_ prefix - balancer wraps this into balance_trigger_voltage
   - platform: template
-    id: bms${bms_id}_balance_trigger_voltage
+    id: bms${bms_id}_bms_balance_trigger_voltage
     device_id: bms_${bms_id}
-    name: "Balance Trigger Voltage"
+    name: "BMS Balance Trigger Voltage"
     unit_of_measurement: V
     device_class: voltage
     accuracy_decimals: 3
