@@ -49,7 +49,7 @@
 # +--------------------------------------+
 
 esp32_ble:
-  io_capability: no_input_no_output
+  io_capability: none
   max_connections: 3
   max_notifications: 10
 
