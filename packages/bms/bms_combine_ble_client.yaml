@@ -1,5 +1,5 @@
 # Updated : 2025.02.02
-# Version : 2.0.0
+# Version : 3.0.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -23,12 +23,9 @@
 # This file configures a BLE GATT client to read BMS data
 # from a BLE server as an alternative to Modbus communication.
 #
-# Services consumed (matching server structure):
-#   1. Status Service    - Online, charging/discharging allowed, equalizing, errors
-#   2. Battery Service   - Voltage, current, power, SoC, SoH, capacity, cycles
-#   3. Cell Service      - Min/max cell voltage and cell numbers
-#   4. Temperature Service - Min/max temperature and sensor numbers
-#   5. Limits Service    - Charge/discharge limits, OVP/UVP, balance trigger
+# PACKED CHARACTERISTIC FORMAT (v3.0):
+# Each service has ONE characteristic with all data packed together.
+# The client unpacks data from byte arrays into individual sensors.
 #
 # Required substitutions:
 #   bms_id: The BMS ID number
@@ -54,17 +51,15 @@ packages:
 # +--------------------------------------+
 # | ESP32 BLE Configuration              |
 # +--------------------------------------+
-# Configure BLE stack with enough notification slots
 
 esp32_ble:
   io_capability: none
   max_connections: 3
-  max_notifications: 30  # We have 25 characteristics that need notifications
+  max_notifications: 10  # Only 5 characteristics now
 
 # +--------------------------------------+
 # | ESP32 BLE Tracker                    |
 # +--------------------------------------+
-# Required for BLE client functionality
 
 esp32_ble_tracker:
   scan_parameters:
@@ -84,7 +79,7 @@ ble_client:
       then:
         - logger.log:
             level: INFO
-            format: "BMS ${bms_id} BLE server connected! Starting service discovery..."
+            format: "BMS ${bms_id} BLE server connected!"
         - lambda: |-
             id(bms${bms_id}_ble_connected) = true;
     on_disconnect:
@@ -111,775 +106,495 @@ globals:
     initial_value: "false"
 
 # +========================================+
-# | SERVICE 1: STATUS SERVICE              |
+# | BINARY SENSORS (from Status packet)   |
 # +========================================+
 
 binary_sensor:
-  # online_status
   - platform: template
     id: bms${bms_id}_online_status
     device_id: bms_${bms_id}
     name: "Online status"
 
-  # charging_allowed
   - platform: template
     id: bms${bms_id}_charging_allowed
     device_id: bms_${bms_id}
     name: "Charging allowed"
 
-  # discharging_allowed
   - platform: template
     id: bms${bms_id}_discharging_allowed
     device_id: bms_${bms_id}
     name: "Discharging allowed"
 
-  # equalizing
   - platform: template
     id: bms${bms_id}_bms_equalizing
     device_id: bms_${bms_id}
     name: "balancing"
-    internal: true
+
+# +========================================+
+# | SENSOR READERS (packed characteristics)|
+# +========================================+
 
 sensor:
   # +--------------------------------------+
-  # | STATUS SERVICE SENSORS               |
+  # | STATUS PACKET READER                 |
   # +--------------------------------------+
-
-  # online_status reader
+  # Packed format (6 bytes):
+  #   [0]: online_status, [1]: charging_allowed
+  #   [2]: discharging_allowed, [3]: equalizing
+  #   [4-5]: errors_bitmask
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_ble_online_status_reader
+    id: bms${bms_id}_ble_status_reader
     internal: true
     type: characteristic
     service_uuid: ${ble_svc_status_uuid}
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2601"
     notify: true
     lambda: |-
-      ESP_LOGD("ble_client", "Online status received: size=%d, value=%d", x.size(), x.size() > 0 ? x[0] : -1);
-      if (x.size() >= 1) return static_cast<float>(x[0]);
-      return 0.0f;
-    on_value:
-      then:
-        - logger.log:
-            level: INFO
-            format: "BLE Client: Online status = %.0f"
-            args: ['x']
-        - lambda: |-
-            id(bms${bms_id}_online_status).publish_state(x > 0);
-
-  # charging_allowed reader
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_ble_charging_allowed_reader
-    internal: true
-    type: characteristic
-    service_uuid: ${ble_svc_status_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2602"
-    notify: true
-    lambda: |-      ESP_LOGD("ble_client", "Charging status received: size=%d", x.size());      if (x.size() >= 1) return static_cast<float>(x[0]);
+      if (x.size() >= 6) {
+        // Unpack and publish binary sensors
+        id(bms${bms_id}_online_status).publish_state(x[0] > 0);
+        id(bms${bms_id}_charging_allowed).publish_state(x[1] > 0);
+        id(bms${bms_id}_discharging_allowed).publish_state(x[2] > 0);
+        id(bms${bms_id}_bms_equalizing).publish_state(x[3] > 0);
+        
+        // Return errors bitmask as sensor value
+        uint16_t errors = x[4] | (x[5] << 8);
+        return static_cast<float>(errors);
+      }
       return 0.0f;
     on_value:
       then:
         - lambda: |-
-            if (!id(bms${bms_id}_online_status).state) {
-              id(bms${bms_id}_charging_allowed).publish_state(false);
-            } else {
-              id(bms${bms_id}_charging_allowed).publish_state(x > 0);
-            }
+            id(bms${bms_id}_yambms_errors_bitmask).publish_state(x);
 
-  # discharging_allowed reader
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_ble_discharging_allowed_reader
-    internal: true
-    type: characteristic
-    service_uuid: ${ble_svc_status_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2603"
-    notify: true
-    lambda: |-
-      if (x.size() >= 1) return static_cast<float>(x[0]);
-      return 0.0f;
-    on_value:
-      then:
-        - lambda: |-
-            if (!id(bms${bms_id}_online_status).state) {
-              id(bms${bms_id}_discharging_allowed).publish_state(false);
-            } else {
-              id(bms${bms_id}_discharging_allowed).publish_state(x > 0);
-            }
-
-  # equalizing reader
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_ble_equalizing_reader
-    internal: true
-    type: characteristic
-    service_uuid: ${ble_svc_status_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2604"
-    notify: true
-    lambda: |-
-      if (x.size() >= 1) return static_cast<float>(x[0]);
-      return 0.0f;
-    on_value:
-      then:
-        - lambda: |-
-            if (!id(bms${bms_id}_online_status).state) {
-              id(bms${bms_id}_bms_equalizing).publish_state(false);
-            } else {
-              id(bms${bms_id}_bms_equalizing).publish_state(x > 0);
-            }
-
-  # errors_bitmask
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  # Errors bitmask sensor (published by status reader)
+  - platform: template
     id: bms${bms_id}_yambms_errors_bitmask
     device_id: bms_${bms_id}
     name: "YamBMS Errors Bitmask"
-    type: characteristic
-    service_uuid: ${ble_svc_status_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2619"
-    notify: true
+    icon: "mdi:alert-circle"
     accuracy_decimals: 0
-    icon: mdi:alert-circle
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return 0.0f;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return 0.0f;
     filters:
       - or:
         - throttle: 10s
         - delta: 1
 
   # +--------------------------------------+
-  # | BATTERY SERVICE SENSORS              |
+  # | BATTERY PACKET READER                |
   # +--------------------------------------+
-
-  # total_voltage (received as mV, converted to V)
+  # Packed format (40 bytes) - see server for layout
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_total_voltage
-    device_id: bms_${bms_id}
-    name: "Total Voltage"
+    id: bms${bms_id}_ble_battery_reader
+    internal: true
     type: characteristic
     service_uuid: ${ble_svc_battery_uuid}
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2605"
     notify: true
-    accuracy_decimals: 2
+    lambda: |-
+      if (!id(bms${bms_id}_online_status).state || x.size() < 36) return NAN;
+      
+      auto unpack_u32 = [&x](size_t offset) -> uint32_t {
+        return x[offset] | (x[offset+1] << 8) | (x[offset+2] << 16) | (x[offset+3] << 24);
+      };
+      auto unpack_i32 = [&x](size_t offset) -> int32_t {
+        uint32_t u = x[offset] | (x[offset+1] << 8) | (x[offset+2] << 16) | (x[offset+3] << 24);
+        return static_cast<int32_t>(u);
+      };
+      auto unpack_u16 = [&x](size_t offset) -> uint16_t {
+        return x[offset] | (x[offset+1] << 8);
+      };
+      
+      // Publish all battery sensors
+      float voltage = unpack_u32(0) * 0.001f;
+      float current = unpack_i32(4) * 0.001f;
+      float power = unpack_i32(8) * 0.001f;
+      float soc = unpack_u16(12) * 0.1f;
+      float soh = unpack_u16(14) * 0.1f;
+      float capacity = unpack_u32(16) * 0.001f;
+      float remaining = unpack_u32(20) * 0.001f;
+      float cycles = static_cast<float>(unpack_u32(24));
+      float charging_power = unpack_u32(28) * 0.001f;
+      float discharging_power = unpack_u32(32) * 0.001f;
+      
+      id(bms${bms_id}_total_voltage).publish_state(voltage);
+      id(bms${bms_id}_current).publish_state(current);
+      id(bms${bms_id}_power).publish_state(power);
+      id(bms${bms_id}_battery_soc).publish_state(soc);
+      id(bms${bms_id}_battery_soh).publish_state(soh);
+      id(bms${bms_id}_battery_capacity).publish_state(capacity);
+      id(bms${bms_id}_battery_capacity_remaining).publish_state(remaining);
+      id(bms${bms_id}_charging_cycles).publish_state(cycles);
+      id(bms${bms_id}_charging_power).publish_state(charging_power);
+      id(bms${bms_id}_discharging_power).publish_state(discharging_power);
+      
+      // Return voltage as the sensor value
+      return voltage;
+
+  # Battery sensors (published by battery reader)
+  - platform: template
+    id: bms${bms_id}_total_voltage
+    device_id: bms_${bms_id}
+    name: "Total Voltage"
     unit_of_measurement: V
     device_class: voltage
-    lambda: |-
-      ESP_LOGD("ble_client", "Voltage notification received: size=%d", x.size());
-      if (x.size() >= 4) {
-        uint32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
-        ESP_LOGD("ble_client", "Voltage raw=%u, converted=%.2fV", val, val * 0.001f);
-      }
-      if (!id(bms${bms_id}_online_status).state) {
-        ESP_LOGD("ble_client", "Voltage: online_status is false, returning NAN");
-        return NAN;
-      }
-      if (x.size() >= 4) {
-        uint32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 2
     filters:
       - or:
         - throttle: 10s
         - delta: 0.01
 
-  # current (received as mA, converted to A, signed)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_current
     device_id: bms_${bms_id}
     name: "Current"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2606"
-    notify: true
-    accuracy_decimals: 2
     unit_of_measurement: A
     device_class: current
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 4) {
-        int32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 2
     filters:
       - or:
         - throttle: 10s
         - delta: 0.01
 
-  # power (received as mW, converted to W, signed)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_power
     device_id: bms_${bms_id}
     name: "Power"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2607"
-    notify: true
-    accuracy_decimals: 2
     unit_of_measurement: W
     device_class: power
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 4) {
-        int32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
-        - delta: 0.01
+        - delta: 1
 
-  # battery_soc (%)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_battery_soc
     device_id: bms_${bms_id}
     name: "Battery SoC"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2608"
-    notify: true
-    accuracy_decimals: 0
-    unit_of_measurement: '%'
+    unit_of_measurement: "%"
     device_class: battery
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
-        - delta: 1
+        - delta: 0.1
 
-  # battery_soh (%)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_battery_soh
     device_id: bms_${bms_id}
     name: "Battery SoH"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b261c"
-    notify: true
-    accuracy_decimals: 0
-    unit_of_measurement: '%'
-    device_class: battery
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
-        - delta: 1
+        - delta: 0.1
 
-  # battery_capacity (Ah)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_battery_capacity
     device_id: bms_${bms_id}
     name: "Battery Capacity"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2609"
-    notify: true
-    accuracy_decimals: 0
     unit_of_measurement: Ah
-    device_class: energy_storage
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
-        - delta: 1
+        - delta: 0.1
 
-  # battery_capacity_remaining (Ah)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_battery_capacity_remaining
     device_id: bms_${bms_id}
     name: "Battery Capacity Remaining"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b260a"
-    notify: true
-    accuracy_decimals: 0
     unit_of_measurement: Ah
-    state_class: measurement
-    icon: mdi:car-battery
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
-        - delta: 1
+        - delta: 0.1
 
-  # charging_cycles
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_charging_cycles
     device_id: bms_${bms_id}
     name: "Charging Cycles"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b260b"
-    notify: true
+    icon: "mdi:battery-sync"
     accuracy_decimals: 0
-    icon: mdi:counter
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
+    filters:
+      - or:
+        - throttle: 60s
+        - delta: 1
+
+  - platform: template
+    id: bms${bms_id}_charging_power
+    device_id: bms_${bms_id}
+    name: "Charging Power"
+    unit_of_measurement: W
+    device_class: power
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
         - delta: 1
 
-  # charging_power (received as mW, converted to W)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_charging_power
-    device_id: bms_${bms_id}
-    name: "Charging Power"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b261a"
-    notify: true
-    accuracy_decimals: 2
-    unit_of_measurement: W
-    device_class: power
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 4) {
-        uint32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
-        return val * 0.001f;
-      }
-      return NAN;
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 0.01
-
-  # discharging_power (received as mW, converted to W)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_discharging_power
     device_id: bms_${bms_id}
     name: "Discharging Power"
-    type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b261b"
-    notify: true
-    accuracy_decimals: 2
     unit_of_measurement: W
     device_class: power
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 4) {
-        uint32_t val = x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
-        - delta: 0.01
+        - delta: 1
 
   # +--------------------------------------+
-  # | CELL VOLTAGE SERVICE SENSORS         |
+  # | CELL PACKET READER                   |
   # +--------------------------------------+
-
-  # max_cell_voltage (received as mV, converted to V)
+  # Packed format (8 bytes):
+  #   [0-1]: max_v, [2-3]: max_cell, [4-5]: min_v, [6-7]: min_cell
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_max_cell_voltage
-    device_id: bms_${bms_id}
-    name: "Max Cell Voltage"
+    id: bms${bms_id}_ble_cell_reader
+    internal: true
     type: characteristic
     service_uuid: ${ble_svc_cell_uuid}
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b260e"
     notify: true
-    accuracy_decimals: 3
+    lambda: |-
+      if (!id(bms${bms_id}_online_status).state || x.size() < 8) return NAN;
+      
+      uint16_t max_v = x[0] | (x[1] << 8);
+      uint16_t max_cell = x[2] | (x[3] << 8);
+      uint16_t min_v = x[4] | (x[5] << 8);
+      uint16_t min_cell = x[6] | (x[7] << 8);
+      
+      id(bms${bms_id}_max_cell_voltage).publish_state(max_v * 0.001f);
+      id(bms${bms_id}_max_voltage_cell).publish_state(static_cast<float>(max_cell));
+      id(bms${bms_id}_min_cell_voltage).publish_state(min_v * 0.001f);
+      id(bms${bms_id}_min_voltage_cell).publish_state(static_cast<float>(min_cell));
+      
+      // Return max voltage as sensor value
+      return max_v * 0.001f;
+
+  # Cell sensors (published by cell reader)
+  - platform: template
+    id: bms${bms_id}_max_cell_voltage
+    device_id: bms_${bms_id}
+    name: "Max Cell Voltage"
     unit_of_measurement: V
     device_class: voltage
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 3
     filters:
       - or:
         - throttle: 10s
         - delta: 0.001
 
-  # max_voltage_cell
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_max_voltage_cell
     device_id: bms_${bms_id}
     name: "Max Voltage Cell"
-    type: characteristic
-    service_uuid: ${ble_svc_cell_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b260f"
-    notify: true
+    icon: "mdi:battery-high"
     accuracy_decimals: 0
-    icon: mdi:numeric
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
     filters:
       - or:
         - throttle: 10s
         - delta: 1
 
-  # min_cell_voltage (received as mV, converted to V)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_min_cell_voltage
     device_id: bms_${bms_id}
     name: "Min Cell Voltage"
-    type: characteristic
-    service_uuid: ${ble_svc_cell_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2610"
-    notify: true
-    accuracy_decimals: 3
     unit_of_measurement: V
     device_class: voltage
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 3
     filters:
       - or:
         - throttle: 10s
         - delta: 0.001
 
-  # min_voltage_cell
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_min_voltage_cell
     device_id: bms_${bms_id}
     name: "Min Voltage Cell"
-    type: characteristic
-    service_uuid: ${ble_svc_cell_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2611"
-    notify: true
+    icon: "mdi:battery-low"
     accuracy_decimals: 0
-    icon: mdi:numeric
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
     filters:
       - or:
         - throttle: 10s
         - delta: 1
 
   # +--------------------------------------+
-  # | TEMPERATURE SERVICE SENSORS          |
+  # | TEMPERATURE PACKET READER            |
   # +--------------------------------------+
-
-  # min_temperature (received as 0.1°C, converted to °C, signed)
-  # NaN from server is sent as -2730 (-273.0°C = absolute zero)
+  # Packed format (8 bytes):
+  #   [0-1]: min_t (int16), [2-3]: min_sensor
+  #   [4-5]: max_t (int16), [6-7]: max_sensor
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_min_temperature
-    device_id: bms_${bms_id}
-    name: "Min temperature"
+    id: bms${bms_id}_ble_temp_reader
+    internal: true
     type: characteristic
     service_uuid: ${ble_svc_temp_uuid}
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2612"
     notify: true
-    accuracy_decimals: 1
-    unit_of_measurement: °C
-    device_class: temperature
     lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        int16_t val = x[0] | (x[1] << 8);
-        // -2730 represents NaN from server (absolute zero indicator)
-        if (val <= -2730) return NAN;
-        return val * 0.1f;
-      }
-      return NAN;
+      if (!id(bms${bms_id}_online_status).state || x.size() < 8) return NAN;
+      
+      int16_t min_t = static_cast<int16_t>(x[0] | (x[1] << 8));
+      uint16_t min_sensor = x[2] | (x[3] << 8);
+      int16_t max_t = static_cast<int16_t>(x[4] | (x[5] << 8));
+      uint16_t max_sensor = x[6] | (x[7] << 8);
+      
+      // Check for NaN indicator (-2730 = absolute zero)
+      float min_temp = (min_t == -2730) ? NAN : (min_t * 0.1f);
+      float max_temp = (max_t == -2730) ? NAN : (max_t * 0.1f);
+      
+      id(bms${bms_id}_min_temperature).publish_state(min_temp);
+      id(bms${bms_id}_min_temperature_sensor).publish_state(static_cast<float>(min_sensor));
+      id(bms${bms_id}_max_temperature).publish_state(max_temp);
+      id(bms${bms_id}_max_temperature_sensor).publish_state(static_cast<float>(max_sensor));
+      
+      // Return max temp as sensor value
+      return max_temp;
+
+  # Temperature sensors (published by temp reader)
+  - platform: template
+    id: bms${bms_id}_min_temperature
+    device_id: bms_${bms_id}
+    name: "Min temperature"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
         - delta: 0.1
 
-  # min_temperature_sensor
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_min_temperature_sensor
     device_id: bms_${bms_id}
     name: "Min temperature sensor"
-    type: characteristic
-    service_uuid: ${ble_svc_temp_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2613"
-    notify: true
+    icon: "mdi:thermometer-chevron-down"
     accuracy_decimals: 0
-    icon: mdi:numeric
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
     filters:
       - or:
         - throttle: 10s
         - delta: 1
 
-  # max_temperature (received as 0.1°C, converted to °C, signed)
-  # NaN from server is sent as -2730 (-273.0°C = absolute zero)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_max_temperature
     device_id: bms_${bms_id}
     name: "Max temperature"
-    type: characteristic
-    service_uuid: ${ble_svc_temp_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2614"
-    notify: true
-    accuracy_decimals: 1
-    unit_of_measurement: °C
+    unit_of_measurement: "°C"
     device_class: temperature
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        int16_t val = x[0] | (x[1] << 8);
-        // -2730 represents NaN from server (absolute zero indicator)
-        if (val <= -2730) return NAN;
-        return val * 0.1f;
-      }
-      return NAN;
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
         - delta: 0.1
 
-  # max_temperature_sensor
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_max_temperature_sensor
     device_id: bms_${bms_id}
     name: "Max temperature sensor"
-    type: characteristic
-    service_uuid: ${ble_svc_temp_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2615"
-    notify: true
+    icon: "mdi:thermometer-chevron-up"
     accuracy_decimals: 0
-    icon: mdi:numeric
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
     filters:
       - or:
         - throttle: 10s
         - delta: 1
 
   # +--------------------------------------+
-  # | LIMITS SERVICE SENSORS               |
+  # | LIMITS PACKET READER                 |
   # +--------------------------------------+
-
-  # max_charge_current (A)
+  # Packed format (10 bytes):
+  #   [0-1]: max_charge, [2-3]: max_discharge
+  #   [4-5]: ovp, [6-7]: uvp, [8-9]: balance_trigger
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_max_charge_current
-    device_id: bms_${bms_id}
-    name: "Max Charge Current"
-    type: characteristic
-    service_uuid: ${ble_svc_limits_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b260c"
-    notify: true
-    accuracy_decimals: 0
-    unit_of_measurement: A
-    icon: mdi:current-dc
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 1
-
-  # max_discharge_current (A)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_max_discharge_current
-    device_id: bms_${bms_id}
-    name: "Max Discharge Current"
-    type: characteristic
-    service_uuid: ${ble_svc_limits_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b260d"
-    notify: true
-    accuracy_decimals: 0
-    unit_of_measurement: A
-    icon: mdi:current-dc
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return static_cast<float>(val);
-      }
-      return NAN;
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 1
-
-  # cell_ovp (received as mV, converted to V)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_cell_ovp
-    device_id: bms_${bms_id}
-    name: "Cell OVP"
+    id: bms${bms_id}_ble_limits_reader
+    internal: true
     type: characteristic
     service_uuid: ${ble_svc_limits_uuid}
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2616"
     notify: true
-    accuracy_decimals: 3
-    unit_of_measurement: V
-    device_class: voltage
     lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return val * 0.001f;
-      }
-      return NAN;
+      if (!id(bms${bms_id}_online_status).state || x.size() < 10) return NAN;
+      
+      uint16_t max_charge = x[0] | (x[1] << 8);
+      uint16_t max_discharge = x[2] | (x[3] << 8);
+      uint16_t ovp = x[4] | (x[5] << 8);
+      uint16_t uvp = x[6] | (x[7] << 8);
+      uint16_t balance = x[8] | (x[9] << 8);
+      
+      id(bms${bms_id}_max_charge_current).publish_state(max_charge * 0.1f);
+      id(bms${bms_id}_max_discharge_current).publish_state(max_discharge * 0.1f);
+      id(bms${bms_id}_cell_ovp).publish_state(ovp * 0.001f);
+      id(bms${bms_id}_cell_uvp).publish_state(uvp * 0.001f);
+      id(bms${bms_id}_balance_trigger_voltage).publish_state(balance * 0.001f);
+      
+      // Return max charge current as sensor value
+      return max_charge * 0.1f;
+
+  # Limits sensors (published by limits reader)
+  - platform: template
+    id: bms${bms_id}_max_charge_current
+    device_id: bms_${bms_id}
+    name: "Max Charge Current"
+    unit_of_measurement: A
+    device_class: current
+    accuracy_decimals: 1
     filters:
       - or:
         - throttle: 10s
+        - delta: 0.1
+
+  - platform: template
+    id: bms${bms_id}_max_discharge_current
+    device_id: bms_${bms_id}
+    name: "Max Discharge Current"
+    unit_of_measurement: A
+    device_class: current
+    accuracy_decimals: 1
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 0.1
+
+  - platform: template
+    id: bms${bms_id}_cell_ovp
+    device_id: bms_${bms_id}
+    name: "Cell OVP"
+    unit_of_measurement: V
+    device_class: voltage
+    accuracy_decimals: 3
+    filters:
+      - or:
+        - throttle: 60s
         - delta: 0.001
 
-  # cell_uvp (received as mV, converted to V)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
+  - platform: template
     id: bms${bms_id}_cell_uvp
     device_id: bms_${bms_id}
     name: "Cell UVP"
-    type: characteristic
-    service_uuid: ${ble_svc_limits_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2617"
-    notify: true
-    accuracy_decimals: 3
     unit_of_measurement: V
     device_class: voltage
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 3
     filters:
       - or:
-        - throttle: 10s
+        - throttle: 60s
         - delta: 0.001
 
-  # balance_trigger_voltage (received as mV, converted to V)
-  - platform: ble_client
-    ble_client_id: ble_client${bms_id}
-    id: bms${bms_id}_bms_balance_trigger_voltage
+  - platform: template
+    id: bms${bms_id}_balance_trigger_voltage
     device_id: bms_${bms_id}
     name: "Balance Trigger Voltage"
-    type: characteristic
-    service_uuid: ${ble_svc_limits_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea07361b2618"
-    notify: true
-    accuracy_decimals: 3
     unit_of_measurement: V
     device_class: voltage
-    lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return NAN;
-      if (x.size() >= 2) {
-        uint16_t val = x[0] | (x[1] << 8);
-        return val * 0.001f;
-      }
-      return NAN;
+    accuracy_decimals: 3
     filters:
       - or:
-        - throttle: 10s
+        - throttle: 60s
         - delta: 0.001
-
-# +--------------------------------------+
-# | Text Sensors                         |
-# +--------------------------------------+
-
-text_sensor:
-  - platform: template
-    id: bms${bms_id}_errors
-    device_id: bms_${bms_id}
-    name: "Errors"
-    icon: mdi:alert-circle
-    lambda: |-
-      uint16_t mask = static_cast<uint16_t>(id(bms${bms_id}_yambms_errors_bitmask).state);
-      if (mask == 0) return std::string("None");
-      
-      std::string errors = "";
-      if (mask & 0x0001) errors += "OVP;";
-      if (mask & 0x0002) errors += "UVP;";
-      if (mask & 0x0004) errors += "OTP;";
-      if (mask & 0x0008) errors += "UTP;";
-      if (mask & 0x0010) errors += "OCP_CHG;";
-      if (mask & 0x0020) errors += "OCP_DSG;";
-      if (mask & 0x0040) errors += "Short;";
-      if (mask & 0x0080) errors += "BMS_Offline;";
-      
-      if (errors.length() > 0 && errors.back() == ';') {
-        errors.pop_back();
-      }
-      return errors;
-    update_interval: 5s
