@@ -72,39 +72,43 @@ binary_sensor:
       device_id: bms_${bms_id}
       name: "balancing"
 
-  # Required sensors from component
+  # MOS status and charging/discharging state from component
   - platform: ecoworthy_bms
     ecoworthy_bms_id: ecoworthy_bms${bms_id}
+    # charging = actively charging right now (current flowing in)
     charging:
-      id: bms${bms_id}_charging_internal
       device_id: bms_${bms_id}
-      internal: true
+      name: "charging active"
+    # discharging = actively discharging right now (current flowing out)
     discharging:
-      id: bms${bms_id}_discharging_internal
+      device_id: bms_${bms_id}
+      name: "discharging active"
+    # charge_mos = charging is allowed/permitted (MOS on)
+    charge_mos:
+      id: bms${bms_id}_charge_mos_internal
       device_id: bms_${bms_id}
       internal: true
-    charge_mos:
-      device_id: bms_${bms_id}
-      name: "charge MOS"
+    # discharge_mos = discharging is allowed/permitted (MOS on)
     discharge_mos:
+      id: bms${bms_id}_discharge_mos_internal
       device_id: bms_${bms_id}
-      name: "discharge MOS"
+      internal: true
 
-  # bms_switch_charging
+  # bms_switch_charging - YamBMS uses this to check if charging is ALLOWED (MOS on)
   - platform: template
     id: bms${bms_id}_charging_allowed
     device_id: bms_${bms_id}
     name: "charging"
     lambda: |-
-      return id(bms${bms_id}_charging_internal).state;
+      return id(bms${bms_id}_charge_mos_internal).state;
 
-  # bms_switch_discharging
+  # bms_switch_discharging - YamBMS uses this to check if discharging is ALLOWED (MOS on)
   - platform: template
     id: bms${bms_id}_discharging_allowed
     device_id: bms_${bms_id}
     name: "discharging"
     lambda: |-
-      return id(bms${bms_id}_discharging_internal).state;
+      return id(bms${bms_id}_discharge_mos_internal).state;
 
 sensor:
   - platform: ecoworthy_bms
