@@ -52,6 +52,16 @@ packages:
   bms_combine: !include bms_combine.yaml
 
 # +--------------------------------------+
+# | ESP32 BLE Configuration              |
+# +--------------------------------------+
+# Configure BLE stack with enough notification slots
+
+esp32_ble:
+  io_capability: none
+  max_connections: 3
+  max_notifications: 30  # We have 25 characteristics that need notifications
+
+# +--------------------------------------+
 # | ESP32 BLE Tracker                    |
 # +--------------------------------------+
 # Required for BLE client functionality
