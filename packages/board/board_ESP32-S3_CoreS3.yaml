@@ -45,19 +45,25 @@ packages:
   psram: !include board_options_PSRAM_quad_80Mhz.yaml
 
 esp32:
-  board: m5stack-atoms3
-  variant: esp32s3
+  board: esp32-s3-devkitc-1
   flash_size: 16MB
   cpu_frequency: 240MHz
   framework:
     type: esp-idf
     sdkconfig_options:
-      CONFIG_ESP32_S3_BOX_BOARD: "y"
-      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
-      CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
-      CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
+        CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+        CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+        CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB: "y"
+        # Moves instructions and read only data from flash into PSRAM on boot.
+        # Both enabled allows instructions to execute while a flash operation is in progress without needing to be placed in IRAM.
+        # Considerably speeds up mWW at the cost of using more PSRAM.
+        CONFIG_SPIRAM_RODATA: "y"
+        CONFIG_SPIRAM_FETCH_INSTRUCTIONS: "y"
 
 esphome:
+  on_boot:
+    then:
+      bm8563.read_time:
   platformio_options:
     board_build.flash_mode: dio             # use Dual IO (dio) instead of Quad IO (qio) to prevent boot loop after flashing
     board_upload.maximum_ram_size: 524288   # total size of the internal RAM in bits, it's the same for all ESP32-S3 ( 512KB )
@@ -66,12 +72,8 @@ esphome:
       - -mfix-esp32-psram-cache-issue
 
 external_components:
-  - source:
-      type: git
-      url: https://github.com/RAR/esphome-axp2101
-      ref: main
-    refresh: 0s
-    components: [ axp2101, aw9523 ]
+  - source: github://m5stack/esphome-yaml/components
+    components: [axp2101, aw88298, aw9523b ]
 
 wifi:
   id: my_network
@@ -102,14 +104,48 @@ i2c:
     scl: GPIO11
     scan: true
 
-aw9523:
-  id: aw9523_component
-  address: 0x58
+time:
+  - platform: bm8563
+    i2c_id: cores3_i2c_bus
+    update_interval: never
+  - platform: homeassistant
+    on_time_sync:
+      then:
+        bm8563.write_time:    
 
 axp2101:
-  id: axp2101_component
-  model: M5CORES3
-  update_interval: 30s
+  id: axp2101_pmu
+  i2c_id: cores3_i2c_bus
+
+# IO Expander
+aw9523b:
+  - id: aw9523b_hub
+    i2c_id: cores3_i2c_bus
+
+output:
+  - platform: axp2101
+    type: range
+    channel: DLDO1
+    id: lcd_backlight_output
+    min_voltage: 2600
+    max_voltage: 3300
+  - platform: axp2101
+    channel: ALDO1
+    voltage: 1800
+  - platform: axp2101
+    channel: ALDO2
+    voltage: 3300
+  - platform: axp2101
+    channel: BLDO1
+    voltage: 2800
+  - platform: axp2101
+    channel: BLDO2
+    voltage: 1500
+  - platform: template
+    id: esp_output
+    type: binary
+    write_action:
+      - logger.log: "Inverter Heartbeat Output"    
 
 sensor:
   - platform: axp2101
@@ -127,42 +163,40 @@ sensor:
     temperature:
       name: "PMU Temperature"
 
-number:
-  - platform: axp2101
-    axp2101_id: axp2101_component
-    backlight:
-      name: "Backlight Brightness"
-    charging_led_mode:
-      name: "Charging LED Mode"
-      # Modes: 0=Off, 1=Blink 1Hz, 2=Blink 4Hz, 3=On, 4=Auto (controlled by charger)
-
-output:
-  - platform: template
-    id: esp_output
-    type: binary
-    write_action:
-      - logger.log: "Inverter Heartbeat Output"
-
 touchscreen:
   - platform: ft63x6
-    i2c_id: cores3_i2c_bus
-    id: my_touchscreen
+    id: touch
+    reset_pin:
+      aw9523b: aw9523b_hub
+      number: 0
+    calibration:
+      x_min: 0
+      x_max: 320
+      y_min: 0
+      y_max: 240
 
 display:
   - platform: mipi_spi
     model: M5CORE
     dc_pin: GPIO35
     reset_pin:
-      aw9523: aw9523_component
-      port: 1
-      pin: 1
-      mode:
-        output: true
+      aw9523b: aw9523b_hub
+      number: 9
     cs_pin: GPIO3
     data_rate: 40MHz
     invert_colors: true
     id: my_display
-            
+
+light:
+  - platform: monochromatic
+    id: lcd_backlight
+    name: "LCD Backlight"
+    icon: "mdi:television"
+    entity_category: config
+    output: lcd_backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
+    
 font:
   - file: "gfonts://Roboto"
     id: roboto_12
