@@ -1,0 +1,81 @@
+# Updated : 2026.02.02
+# Version : 1.0.0
+# GitHub  : https://github.com/RAR/esphome-ecoworthy-bms
+
+# YamBMS ( Yet another multi-BMS Merging Solution )
+
+# This YAML is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
+
+# +--------------------------------------+
+# | Errors Bitmask for Ecoworthy BMS     |
+# +--------------------------------------+
+# Parses the fault and alarm bitmasks from the Ecoworthy BMS
+# and creates a YamBMS-compatible errors_bitmask sensor
+
+sensor:
+  # YamBMS errors bitmask (16bit)
+  # Combines fault and alarm bitmasks into a single YamBMS-compatible format
+  - platform: template
+    id: bms${bms_id}_yambms_errors_bitmask
+    device_id: bms_${bms_id}
+    name: "yambms errors bitmask"
+    update_interval: ${bms_update_interval}
+    accuracy_decimals: 0
+    icon: mdi:alert-circle-outline
+    internal: true
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 1
+    lambda: |-
+      // Combine fault_bitmask (high byte) and alarm_bitmask (low byte)
+      uint16_t errors = 0;
+      
+      if (id(bms${bms_id}_fault_bitmask).has_state()) {
+        errors |= ((uint16_t)id(bms${bms_id}_fault_bitmask).state & 0xFF) << 8;
+      }
+      
+      if (id(bms${bms_id}_alarm_bitmask).has_state()) {
+        errors |= (uint16_t)id(bms${bms_id}_alarm_bitmask).state & 0xFF;
+      }
+      
+      return errors;
+
+text_sensor:
+  # YamBMS errors text
+  - platform: template
+    id: bms${bms_id}_yambms_errors
+    device_id: bms_${bms_id}
+    name: "errors"
+    icon: mdi:alert-circle-outline
+    update_interval: ${bms_update_interval}
+    lambda: |-
+      std::string errors = "";
+      
+      // Get fault text if available
+      if (id(bms${bms_id}_fault_text).has_state() && id(bms${bms_id}_fault_text).state != "None") {
+        errors += id(bms${bms_id}_fault_text).state;
+      }
+      
+      // Get alarm text if available
+      if (id(bms${bms_id}_alarm_text).has_state() && id(bms${bms_id}_alarm_text).state != "None") {
+        if (!errors.empty()) errors += " | ";
+        errors += id(bms${bms_id}_alarm_text).state;
+      }
+      
+      if (errors.empty()) {
+        return std::string("None");
+      }
+      
+      return errors;
