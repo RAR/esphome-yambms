@@ -155,7 +155,6 @@ display:
     spi_id: cores3_spi_bus
     cs_pin: 3
     dc_pin: 35
-    data_rate: 8000000.0
     reset_pin:
       aw9523: aw9523_component
       port: 1
