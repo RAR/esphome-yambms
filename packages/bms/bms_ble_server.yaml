@@ -1,5 +1,5 @@
 # Updated : 2025.02.02
-# Version : 2.0.0
+# Version : 3.0.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -23,12 +23,16 @@
 # This file configures a BLE GATT server to expose BMS data
 # as an alternative to Modbus communication.
 #
-# Services are organized by purpose:
-#   1. Status Service    - Online, charging/discharging allowed, equalizing, errors
-#   2. Battery Service   - Voltage, current, power, SoC, SoH, capacity, cycles
-#   3. Cell Service      - Min/max cell voltage and cell numbers
-#   4. Temperature Service - Min/max temperature and sensor numbers
-#   5. Limits Service    - Charge/discharge limits, OVP/UVP, balance trigger
+# PACKED CHARACTERISTIC FORMAT (v3.0):
+# Each service exposes ONE characteristic with all data packed together.
+# This reduces GATT attribute count for better compatibility.
+#
+# Services:
+#   1. Status Service  - 6 bytes packed status data
+#   2. Battery Service - 40 bytes packed battery data
+#   3. Cell Service    - 8 bytes packed cell data
+#   4. Temp Service    - 8 bytes packed temperature data
+#   5. Limits Service  - 10 bytes packed limits data
 #
 # Required substitutions:
 #   bms_id: The BMS ID number
@@ -46,7 +50,7 @@ substitutions:
 # Configure BLE stack for dual role (client + server)
 esp32_ble:
   io_capability: none
-  max_connections: 5  # Need slots for both JBD client and YamBMS server connections
+  max_connections: 5
 
 esp32_ble_server:
   manufacturer: "YamBMS"
@@ -55,529 +59,242 @@ esp32_ble_server:
     # ==========================================
     # SERVICE 1: STATUS SERVICE
     # ==========================================
+    # Packed format (6 bytes):
+    #   [0]: online_status (0/1)
+    #   [1]: charging_allowed (0/1)
+    #   [2]: discharging_allowed (0/1)
+    #   [3]: equalizing (0/1)
+    #   [4-5]: errors_bitmask (uint16_t LE)
     - uuid: ${ble_svc_status_uuid}
       advertise: true
       characteristics:
-        # Online Status (1 byte: 0/1)
-        - id: bms${bms_id}_ble_online_status
+        - id: bms${bms_id}_ble_status_packet
           uuid: "beb5483e-36e1-4688-b7f5-ea07361b2601"
-          description: "Online Status"
+          description: "Status Packet"
           read: true
           notify: true
           value:
             data: !lambda |-
-              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_online_status).state ? 1 : 0)};
-
-        # Charging Allowed (1 byte: 0/1)
-        - id: bms${bms_id}_ble_charging_allowed
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2602"
-          description: "Charging Allowed"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_charging_allowed).state ? 1 : 0)};
-
-        # Discharging Allowed (1 byte: 0/1)
-        - id: bms${bms_id}_ble_discharging_allowed
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2603"
-          description: "Discharging Allowed"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_discharging_allowed).state ? 1 : 0)};
-
-        # Equalizing/Balancing (1 byte: 0/1)
-        - id: bms${bms_id}_ble_equalizing
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2604"
-          description: "Equalizing"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              return std::vector<uint8_t>{static_cast<uint8_t>(id(bms${bms_id}_equalizing).state ? 1 : 0)};
-
-        # Errors Bitmask (2 bytes: uint16_t)
-        - id: bms${bms_id}_ble_errors_bitmask
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2619"
-          description: "Errors Bitmask"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_yambms_errors_bitmask).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
+              uint16_t errors = 0;
+              float err_state = id(bms${bms_id}_yambms_errors_bitmask).state;
+              if (!std::isnan(err_state)) errors = static_cast<uint16_t>(err_state);
+              
               return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+                static_cast<uint8_t>(id(bms${bms_id}_online_status).state ? 1 : 0),
+                static_cast<uint8_t>(id(bms${bms_id}_charging_allowed).state ? 1 : 0),
+                static_cast<uint8_t>(id(bms${bms_id}_discharging_allowed).state ? 1 : 0),
+                static_cast<uint8_t>(id(bms${bms_id}_equalizing).state ? 1 : 0),
+                static_cast<uint8_t>(errors & 0xFF),
+                static_cast<uint8_t>((errors >> 8) & 0xFF)
               };
 
     # ==========================================
     # SERVICE 2: BATTERY SERVICE
     # ==========================================
+    # Packed format (40 bytes):
+    #   [0-3]: total_voltage (uint32_t LE, mV)
+    #   [4-7]: current (int32_t LE, mA)
+    #   [8-11]: power (int32_t LE, mW)
+    #   [12-13]: soc (uint16_t LE, 0.1%)
+    #   [14-15]: soh (uint16_t LE, 0.1%)
+    #   [16-19]: capacity (uint32_t LE, mAh)
+    #   [20-23]: capacity_remaining (uint32_t LE, mAh)
+    #   [24-27]: charging_cycles (uint32_t LE)
+    #   [28-31]: charging_power (uint32_t LE, mW)
+    #   [32-35]: discharging_power (uint32_t LE, mW)
+    #   [36-39]: reserved
     - uuid: ${ble_svc_battery_uuid}
       advertise: false
       characteristics:
-        # Total Voltage (4 bytes: uint32_t in mV)
-        - id: bms${bms_id}_ble_total_voltage
+        - id: bms${bms_id}_ble_battery_packet
           uuid: "beb5483e-36e1-4688-b7f5-ea07361b2605"
-          description: "Total Voltage mV"
+          description: "Battery Packet"
           read: true
           notify: true
           value:
             data: !lambda |-
-              float state = id(bms${bms_id}_total_voltage).state;
-              uint32_t val = std::isnan(state) ? 0 : static_cast<uint32_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF),
-                static_cast<uint8_t>((val >> 16) & 0xFF),
-                static_cast<uint8_t>((val >> 24) & 0xFF)
+              auto pack_u32 = [](std::vector<uint8_t>& v, uint32_t val) {
+                v.push_back(val & 0xFF);
+                v.push_back((val >> 8) & 0xFF);
+                v.push_back((val >> 16) & 0xFF);
+                v.push_back((val >> 24) & 0xFF);
               };
-
-        # Current (4 bytes: int32_t in mA, signed)
-        - id: bms${bms_id}_ble_current
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2606"
-          description: "Current mA"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_current).state;
-              int32_t val = std::isnan(state) ? 0 : static_cast<int32_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF),
-                static_cast<uint8_t>((val >> 16) & 0xFF),
-                static_cast<uint8_t>((val >> 24) & 0xFF)
+              auto pack_i32 = [](std::vector<uint8_t>& v, int32_t val) {
+                v.push_back(val & 0xFF);
+                v.push_back((val >> 8) & 0xFF);
+                v.push_back((val >> 16) & 0xFF);
+                v.push_back((val >> 24) & 0xFF);
               };
-
-        # Power (4 bytes: int32_t in mW, signed)
-        - id: bms${bms_id}_ble_power
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2607"
-          description: "Power mW"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_power).state;
-              int32_t val = std::isnan(state) ? 0 : static_cast<int32_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF),
-                static_cast<uint8_t>((val >> 16) & 0xFF),
-                static_cast<uint8_t>((val >> 24) & 0xFF)
+              auto pack_u16 = [](std::vector<uint8_t>& v, uint16_t val) {
+                v.push_back(val & 0xFF);
+                v.push_back((val >> 8) & 0xFF);
               };
-
-        # Battery SoC (2 bytes: uint16_t in %)
-        - id: bms${bms_id}_ble_battery_soc
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2608"
-          description: "Battery SoC %"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_battery_soc).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+              auto safe_float = [](float val, float def = 0.0f) {
+                return std::isnan(val) ? def : val;
               };
-
-        # Battery SoH (2 bytes: uint16_t in %)
-        - id: bms${bms_id}_ble_battery_soh
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b261c"
-          description: "Battery SoH %"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_battery_soh).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Battery Capacity (2 bytes: uint16_t in Ah)
-        - id: bms${bms_id}_ble_battery_capacity
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2609"
-          description: "Battery Capacity Ah"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_battery_capacity).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Battery Capacity Remaining (2 bytes: uint16_t in Ah)
-        - id: bms${bms_id}_ble_battery_capacity_remaining
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260a"
-          description: "Battery Capacity Remaining Ah"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_battery_capacity_remaining).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Charging Cycles (2 bytes: uint16_t)
-        - id: bms${bms_id}_ble_charging_cycles
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260b"
-          description: "Charging Cycles"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_charging_cycles).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Charging Power (4 bytes: uint32_t in mW)
-        - id: bms${bms_id}_ble_charging_power
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b261a"
-          description: "Charging Power mW"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_charging_power).state;
-              uint32_t val = std::isnan(state) ? 0 : static_cast<uint32_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF),
-                static_cast<uint8_t>((val >> 16) & 0xFF),
-                static_cast<uint8_t>((val >> 24) & 0xFF)
-              };
-
-        # Discharging Power (4 bytes: uint32_t in mW)
-        - id: bms${bms_id}_ble_discharging_power
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b261b"
-          description: "Discharging Power mW"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_discharging_power).state;
-              uint32_t val = std::isnan(state) ? 0 : static_cast<uint32_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF),
-                static_cast<uint8_t>((val >> 16) & 0xFF),
-                static_cast<uint8_t>((val >> 24) & 0xFF)
-              };
+              
+              std::vector<uint8_t> data;
+              data.reserve(40);
+              
+              // Voltage (mV)
+              pack_u32(data, static_cast<uint32_t>(safe_float(id(bms${bms_id}_total_voltage).state) * 1000));
+              // Current (mA)
+              pack_i32(data, static_cast<int32_t>(safe_float(id(bms${bms_id}_current).state) * 1000));
+              // Power (mW)
+              pack_i32(data, static_cast<int32_t>(safe_float(id(bms${bms_id}_power).state) * 1000));
+              // SoC (0.1%)
+              pack_u16(data, static_cast<uint16_t>(safe_float(id(bms${bms_id}_battery_soc).state) * 10));
+              // SoH (0.1%)
+              pack_u16(data, static_cast<uint16_t>(safe_float(id(bms${bms_id}_battery_soh).state) * 10));
+              // Capacity (mAh)
+              pack_u32(data, static_cast<uint32_t>(safe_float(id(bms${bms_id}_battery_capacity).state) * 1000));
+              // Capacity remaining (mAh)
+              pack_u32(data, static_cast<uint32_t>(safe_float(id(bms${bms_id}_battery_capacity_remaining).state) * 1000));
+              // Charging cycles
+              pack_u32(data, static_cast<uint32_t>(safe_float(id(bms${bms_id}_charging_cycles).state)));
+              // Charging power (mW)
+              pack_u32(data, static_cast<uint32_t>(safe_float(id(bms${bms_id}_charging_power).state) * 1000));
+              // Discharging power (mW)
+              pack_u32(data, static_cast<uint32_t>(safe_float(id(bms${bms_id}_discharging_power).state) * 1000));
+              
+              return data;
 
     # ==========================================
     # SERVICE 3: CELL VOLTAGE SERVICE
     # ==========================================
+    # Packed format (8 bytes):
+    #   [0-1]: max_cell_voltage (uint16_t LE, mV)
+    #   [2-3]: max_voltage_cell (uint16_t LE)
+    #   [4-5]: min_cell_voltage (uint16_t LE, mV)
+    #   [6-7]: min_voltage_cell (uint16_t LE)
     - uuid: ${ble_svc_cell_uuid}
       advertise: false
       characteristics:
-        # Max Cell Voltage (2 bytes: uint16_t in mV)
-        - id: bms${bms_id}_ble_max_cell_voltage
+        - id: bms${bms_id}_ble_cell_packet
           uuid: "beb5483e-36e1-4688-b7f5-ea07361b260e"
-          description: "Max Cell Voltage mV"
+          description: "Cell Packet"
           read: true
           notify: true
           value:
             data: !lambda |-
-              float state = id(bms${bms_id}_max_cell_voltage).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+              auto safe_float = [](float val, float def = 0.0f) {
+                return std::isnan(val) ? def : val;
               };
-
-        # Max Voltage Cell Number (2 bytes: uint16_t)
-        - id: bms${bms_id}_ble_max_voltage_cell
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260f"
-          description: "Max Voltage Cell"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_max_voltage_cell).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
+              
+              uint16_t max_v = static_cast<uint16_t>(safe_float(id(bms${bms_id}_max_cell_voltage).state) * 1000);
+              uint16_t max_cell = static_cast<uint16_t>(safe_float(id(bms${bms_id}_max_voltage_cell).state));
+              uint16_t min_v = static_cast<uint16_t>(safe_float(id(bms${bms_id}_min_cell_voltage).state) * 1000);
+              uint16_t min_cell = static_cast<uint16_t>(safe_float(id(bms${bms_id}_min_voltage_cell).state));
+              
               return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Min Cell Voltage (2 bytes: uint16_t in mV)
-        - id: bms${bms_id}_ble_min_cell_voltage
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2610"
-          description: "Min Cell Voltage mV"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_min_cell_voltage).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Min Voltage Cell Number (2 bytes: uint16_t)
-        - id: bms${bms_id}_ble_min_voltage_cell
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2611"
-          description: "Min Voltage Cell"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_min_voltage_cell).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+                static_cast<uint8_t>(max_v & 0xFF),
+                static_cast<uint8_t>((max_v >> 8) & 0xFF),
+                static_cast<uint8_t>(max_cell & 0xFF),
+                static_cast<uint8_t>((max_cell >> 8) & 0xFF),
+                static_cast<uint8_t>(min_v & 0xFF),
+                static_cast<uint8_t>((min_v >> 8) & 0xFF),
+                static_cast<uint8_t>(min_cell & 0xFF),
+                static_cast<uint8_t>((min_cell >> 8) & 0xFF)
               };
 
     # ==========================================
     # SERVICE 4: TEMPERATURE SERVICE
     # ==========================================
+    # Packed format (8 bytes):
+    #   [0-1]: min_temperature (int16_t LE, 0.1°C)
+    #   [2-3]: min_temperature_sensor (uint16_t LE)
+    #   [4-5]: max_temperature (int16_t LE, 0.1°C)
+    #   [6-7]: max_temperature_sensor (uint16_t LE)
     - uuid: ${ble_svc_temp_uuid}
       advertise: false
       characteristics:
-        # Min Temperature (2 bytes: int16_t in 0.1°C, signed)
-        - id: bms${bms_id}_ble_min_temperature
+        - id: bms${bms_id}_ble_temp_packet
           uuid: "beb5483e-36e1-4688-b7f5-ea07361b2612"
-          description: "Min Temperature 0.1C"
+          description: "Temperature Packet"
           read: true
           notify: true
           value:
             data: !lambda |-
-              float state = id(bms${bms_id}_min_temperature).state;
-              int16_t val = std::isnan(state) ? -2730 : static_cast<int16_t>(state * 10);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+              auto safe_temp = [](float val) -> int16_t {
+                if (std::isnan(val)) return -2730;  // Absolute zero indicator
+                return static_cast<int16_t>(val * 10);
               };
-
-        # Min Temperature Sensor Number (2 bytes: uint16_t)
-        - id: bms${bms_id}_ble_min_temperature_sensor
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2613"
-          description: "Min Temperature Sensor"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_min_temperature_sensor).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+              auto safe_float = [](float val, float def = 0.0f) {
+                return std::isnan(val) ? def : val;
               };
-
-        # Max Temperature (2 bytes: int16_t in 0.1°C, signed)
-        - id: bms${bms_id}_ble_max_temperature
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2614"
-          description: "Max Temperature 0.1C"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_max_temperature).state;
-              int16_t val = std::isnan(state) ? -2730 : static_cast<int16_t>(state * 10);
+              
+              int16_t min_t = safe_temp(id(bms${bms_id}_min_temperature).state);
+              uint16_t min_sensor = static_cast<uint16_t>(safe_float(id(bms${bms_id}_min_temperature_sensor).state));
+              int16_t max_t = safe_temp(id(bms${bms_id}_max_temperature).state);
+              uint16_t max_sensor = static_cast<uint16_t>(safe_float(id(bms${bms_id}_max_temperature_sensor).state));
+              
               return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Max Temperature Sensor Number (2 bytes: uint16_t)
-        - id: bms${bms_id}_ble_max_temperature_sensor
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2615"
-          description: "Max Temperature Sensor"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_max_temperature_sensor).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+                static_cast<uint8_t>(min_t & 0xFF),
+                static_cast<uint8_t>((min_t >> 8) & 0xFF),
+                static_cast<uint8_t>(min_sensor & 0xFF),
+                static_cast<uint8_t>((min_sensor >> 8) & 0xFF),
+                static_cast<uint8_t>(max_t & 0xFF),
+                static_cast<uint8_t>((max_t >> 8) & 0xFF),
+                static_cast<uint8_t>(max_sensor & 0xFF),
+                static_cast<uint8_t>((max_sensor >> 8) & 0xFF)
               };
 
     # ==========================================
     # SERVICE 5: LIMITS SERVICE
     # ==========================================
+    # Packed format (10 bytes):
+    #   [0-1]: max_charge_current (uint16_t LE, 0.1A)
+    #   [2-3]: max_discharge_current (uint16_t LE, 0.1A)
+    #   [4-5]: cell_ovp (uint16_t LE, mV)
+    #   [6-7]: cell_uvp (uint16_t LE, mV)
+    #   [8-9]: balance_trigger_voltage (uint16_t LE, mV)
     - uuid: ${ble_svc_limits_uuid}
       advertise: false
       characteristics:
-        # Max Charge Current (2 bytes: uint16_t in A)
-        - id: bms${bms_id}_ble_max_charge_current
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260c"
-          description: "Max Charge Current A"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_max_charge_current).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Max Discharge Current (2 bytes: uint16_t in A)
-        - id: bms${bms_id}_ble_max_discharge_current
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b260d"
-          description: "Max Discharge Current A"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_max_discharge_current).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Cell OVP (2 bytes: uint16_t in mV)
-        - id: bms${bms_id}_ble_cell_ovp
+        - id: bms${bms_id}_ble_limits_packet
           uuid: "beb5483e-36e1-4688-b7f5-ea07361b2616"
-          description: "Cell OVP mV"
+          description: "Limits Packet"
           read: true
           notify: true
           value:
             data: !lambda |-
-              float state = id(bms${bms_id}_cell_ovp).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+              auto safe_float = [](float val, float def = 0.0f) {
+                return std::isnan(val) ? def : val;
               };
-
-        # Cell UVP (2 bytes: uint16_t in mV)
-        - id: bms${bms_id}_ble_cell_uvp
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2617"
-          description: "Cell UVP mV"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_cell_uvp).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state * 1000);
+              
+              uint16_t max_charge = static_cast<uint16_t>(safe_float(id(bms${bms_id}_max_charge_current).state) * 10);
+              uint16_t max_discharge = static_cast<uint16_t>(safe_float(id(bms${bms_id}_max_discharge_current).state) * 10);
+              uint16_t ovp = static_cast<uint16_t>(safe_float(id(bms${bms_id}_cell_ovp).state) * 1000);
+              uint16_t uvp = static_cast<uint16_t>(safe_float(id(bms${bms_id}_cell_uvp).state) * 1000);
+              uint16_t balance = static_cast<uint16_t>(safe_float(id(bms${bms_id}_balance_trigger_voltage).state) * 1000);
+              
               return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
-              };
-
-        # Balance Trigger Voltage (2 bytes: uint16_t in mV)
-        - id: bms${bms_id}_ble_balance_trigger_voltage
-          uuid: "beb5483e-36e1-4688-b7f5-ea07361b2618"
-          description: "Balance Trigger Voltage mV"
-          read: true
-          notify: true
-          value:
-            data: !lambda |-
-              float state = id(bms${bms_id}_balance_trigger_voltage).state;
-              uint16_t val = std::isnan(state) ? 0 : static_cast<uint16_t>(state * 1000);
-              return std::vector<uint8_t>{
-                static_cast<uint8_t>(val & 0xFF),
-                static_cast<uint8_t>((val >> 8) & 0xFF)
+                static_cast<uint8_t>(max_charge & 0xFF),
+                static_cast<uint8_t>((max_charge >> 8) & 0xFF),
+                static_cast<uint8_t>(max_discharge & 0xFF),
+                static_cast<uint8_t>((max_discharge >> 8) & 0xFF),
+                static_cast<uint8_t>(ovp & 0xFF),
+                static_cast<uint8_t>((ovp >> 8) & 0xFF),
+                static_cast<uint8_t>(uvp & 0xFF),
+                static_cast<uint8_t>((uvp >> 8) & 0xFF),
+                static_cast<uint8_t>(balance & 0xFF),
+                static_cast<uint8_t>((balance >> 8) & 0xFF)
               };
 
 # +--------------------------------------+
 # | Interval to trigger notifications    |
 # +--------------------------------------+
-# Notifications are grouped by service for better organization
 
 interval:
-  # Status Service notifications
-  - interval: ${ble_notify_interval}
-    then:
-      - logger.log:
-          level: INFO
-          format: "BLE Server: Sending Status notifications (online=%d)"
-          args: ['id(bms${bms_id}_online_status).state']
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_online_status
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_charging_allowed
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_discharging_allowed
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_equalizing
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_errors_bitmask
-
-  # Battery Service notifications
-  - interval: ${ble_notify_interval}
-    then:
-      - logger.log:
-          level: INFO
-          format: "BLE Server: Sending Battery notifications (voltage=%.2fV)"
-          args: ['id(bms${bms_id}_total_voltage).state']
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_total_voltage
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_current
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_power
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_battery_soc
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_battery_soh
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_battery_capacity
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_battery_capacity_remaining
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_charging_cycles
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_charging_power
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_discharging_power
-
-  # Cell Voltage Service notifications
   - interval: ${ble_notify_interval}
     then:
       - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_max_cell_voltage
+          id: bms${bms_id}_ble_status_packet
       - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_max_voltage_cell
+          id: bms${bms_id}_ble_battery_packet
       - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_min_cell_voltage
+          id: bms${bms_id}_ble_cell_packet
       - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_min_voltage_cell
-
-  # Temperature Service notifications
-  - interval: ${ble_notify_interval}
-    then:
+          id: bms${bms_id}_ble_temp_packet
       - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_min_temperature
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_min_temperature_sensor
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_max_temperature
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_max_temperature_sensor
-
-  # Limits Service notifications
-  - interval: ${ble_notify_interval}
-    then:
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_max_charge_current
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_max_discharge_current
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_cell_ovp
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_cell_uvp
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_balance_trigger_voltage
+          id: bms${bms_id}_ble_limits_packet
