@@ -38,7 +38,7 @@
 
 packages:
   bms_base: !include bms_base.yaml
-  bms_temperature_sensor: !include bms_temperature_sensor_4.yaml
+  bms_temperature_sensor: !include bms_temperature_sensor_Ecoworthy.yaml
   bms_errors_bitmask: !include bms_errors_bitmask_Ecoworthy.yaml
 
 # +--------------------------------------+
@@ -263,9 +263,11 @@ sensor:
       device_id: bms_${bms_id}
       name: "ambient temperature"
     min_temperature:
+      id: bms${bms_id}_min_temperature
       device_id: bms_${bms_id}
       name: "min temperature"
     max_temperature:
+      id: bms${bms_id}_max_temperature
       device_id: bms_${bms_id}
       name: "max temperature"
     avg_temperature:
