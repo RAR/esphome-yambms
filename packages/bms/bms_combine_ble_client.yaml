@@ -1,5 +1,5 @@
-# Updated : 2026.02.01
-# Version : 1.0.0
+# Updated : 2025.02.01
+# Version : 1.1.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -554,6 +554,7 @@ sensor:
         - delta: 1
 
   # min_temperature (received as 0.1°C, converted to °C, signed)
+  # NaN from server is sent as -2730 (-273.0°C = absolute zero)
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
     id: bms${bms_id}_min_temperature
@@ -567,12 +568,14 @@ sensor:
     unit_of_measurement: °C
     device_class: temperature
     lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return 0.0f;
+      if (!id(bms${bms_id}_online_status).state) return NAN;
       if (x.size() >= 2) {
         int16_t val = x[0] | (x[1] << 8);
+        // -2730 represents NaN from server (absolute zero indicator)
+        if (val <= -2730) return NAN;
         return val * 0.1f;
       }
-      return 0.0f;
+      return NAN;
     filters:
       - or:
         - throttle: 10s
@@ -603,6 +606,7 @@ sensor:
         - delta: 1
 
   # max_temperature (received as 0.1°C, converted to °C, signed)
+  # NaN from server is sent as -2730 (-273.0°C = absolute zero)
   - platform: ble_client
     ble_client_id: ble_client${bms_id}
     id: bms${bms_id}_max_temperature
@@ -616,12 +620,14 @@ sensor:
     unit_of_measurement: °C
     device_class: temperature
     lambda: |-
-      if (!id(bms${bms_id}_online_status).state) return 0.0f;
+      if (!id(bms${bms_id}_online_status).state) return NAN;
       if (x.size() >= 2) {
         int16_t val = x[0] | (x[1] << 8);
+        // -2730 represents NaN from server (absolute zero indicator)
+        if (val <= -2730) return NAN;
         return val * 0.1f;
       }
-      return 0.0f;
+      return NAN;
     filters:
       - or:
         - throttle: 10s
