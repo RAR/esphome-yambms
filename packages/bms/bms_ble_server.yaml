@@ -496,6 +496,10 @@ interval:
   # Status Service notifications
   - interval: ${ble_notify_interval}
     then:
+      - logger.log:
+          level: INFO
+          format: "BLE Server: Sending Status notifications (online=%d)"
+          args: ['id(bms${bms_id}_online_status).state']
       - ble_server.characteristic.notify:
           id: bms${bms_id}_ble_online_status
       - ble_server.characteristic.notify:
@@ -510,6 +514,10 @@ interval:
   # Battery Service notifications
   - interval: ${ble_notify_interval}
     then:
+      - logger.log:
+          level: INFO
+          format: "BLE Server: Sending Battery notifications (voltage=%.2fV)"
+          args: ['id(bms${bms_id}_total_voltage).state']
       - ble_server.characteristic.notify:
           id: bms${bms_id}_ble_total_voltage
       - ble_server.characteristic.notify:
