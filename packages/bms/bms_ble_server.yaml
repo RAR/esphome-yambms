@@ -52,9 +52,23 @@ esp32_ble:
   io_capability: none
   max_connections: 5
 
+globals:
+  - id: bms${bms_id}_ble_client_connected
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
 esp32_ble_server:
   manufacturer: "YamBMS"
   model: "BMS ${bms_id}"
+  on_connect:
+    - lambda: |-
+        id(bms${bms_id}_ble_client_connected) = true;
+        ESP_LOGI("ble_server", "Client connected");
+  on_disconnect:
+    - lambda: |-
+        id(bms${bms_id}_ble_client_connected) = false;
+        ESP_LOGI("ble_server", "Client disconnected");
   services:
     # ==========================================
     # SERVICE 1: STATUS SERVICE
@@ -288,13 +302,17 @@ esp32_ble_server:
 interval:
   - interval: ${ble_notify_interval}
     then:
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_status_packet
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_battery_packet
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_cell_packet
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_temp_packet
-      - ble_server.characteristic.notify:
-          id: bms${bms_id}_ble_limits_packet
+      - if:
+          condition:
+            lambda: 'return id(bms${bms_id}_ble_client_connected);'
+          then:
+            - ble_server.characteristic.notify:
+                id: bms${bms_id}_ble_status_packet
+            - ble_server.characteristic.notify:
+                id: bms${bms_id}_ble_battery_packet
+            - ble_server.characteristic.notify:
+                id: bms${bms_id}_ble_cell_packet
+            - ble_server.characteristic.notify:
+                id: bms${bms_id}_ble_temp_packet
+            - ble_server.characteristic.notify:
+                id: bms${bms_id}_ble_limits_packet
