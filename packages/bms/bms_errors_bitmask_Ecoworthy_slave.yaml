@@ -1,4 +1,4 @@
-# Updated : 2026.02.02
+# Updated : 2026.02.03
 # Version : 1.0.0
 # GitHub  : https://github.com/RAR/esphome-ecoworthy-bms
 
@@ -18,26 +18,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
   # +--------------------------------------+
-  # | Ecoworthy Errors Bitmask             |
+  # | Ecoworthy SLAVE Errors Bitmask       |
   # +--------------------------------------+
   # Maps Ecoworthy fault_bitmask (32-bit) and alarm_bitmask (32-bit) to
-  # +--------------------------------------+
-  # | YamBMS Errors Bitmask (16bit)        |
-  # +--------------------------------------+
-
-  # Ecoworthy Fault Bits (from ecoworthy_bms.cpp):
-  #   Bit 0:  Cell OV              Bit 12: MOS HT
-  #   Bit 1:  Cell UV              Bit 13: Ambient HT
-  #   Bit 2:  Pack OV              Bit 14: Ambient LT
-  #   Bit 3:  Pack UV              Bit 15: Cell V Diff
-  #   Bit 4:  Charge OC Slow       Bit 16: Temp Diff
-  #   Bit 5:  Charge OC Fast       Bit 17: SOC Low
-  #   Bit 6:  Discharge OC Slow    Bit 18: Short Circuit
-  #   Bit 7:  Discharge OC Fast    Bit 19: Cell Offline
-  #   Bit 8:  Charge HT            Bit 20: Temp Sensor Fail
-  #   Bit 9:  Charge LT            Bit 21: Charge MOS Fault
-  #   Bit 10: Discharge HT         Bit 22: Discharge MOS Fault
-  #   Bit 11: Discharge LT         Bit 23: AFE Comm Error
+  # YamBMS Errors Bitmask (16bit)
+  #
+  # This is identical to the master version - slave batteries expose
+  # the same fault/alarm bitmask format via Pack Status polling.
 
   # YamBMS Error Bits:
   # Bit 0     General alarm                                0x0001 
