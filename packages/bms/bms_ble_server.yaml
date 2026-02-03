@@ -46,7 +46,7 @@
 #
 # Required substitutions:
 #   bms_id: The BMS ID number (1-9 for multi-BMS, any for single)
-#   ble_notify_interval: Interval for notify updates (default: 1s)
+#   bms_update_interval: BMS polling interval (also used for BLE notifications)
 
 substitutions:
   # Service UUIDs - each service has a unique UUID
@@ -55,7 +55,6 @@ substitutions:
   ble_svc_cell_uuid: "4fafc203-1fb5-459e-8fcc-c5c9c331914b"
   ble_svc_temp_uuid: "4fafc204-1fb5-459e-8fcc-c5c9c331914b"
   ble_svc_limits_uuid: "4fafc205-1fb5-459e-8fcc-c5c9c331914b"
-  ble_notify_interval: "1s"
 
 # Configure BLE stack for dual role (client + server)
 esp32_ble:
@@ -310,7 +309,7 @@ esp32_ble_server:
 # +--------------------------------------+
 
 interval:
-  - interval: ${ble_notify_interval}
+  - interval: ${bms_update_interval}
     then:
       - if:
           condition:
