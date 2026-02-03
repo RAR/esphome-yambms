@@ -55,12 +55,12 @@ substitutions:
   ble_svc_cell_uuid: "4fafc203-1fb5-459e-8fcc-c5c9c331914b"
   ble_svc_temp_uuid: "4fafc204-1fb5-459e-8fcc-c5c9c331914b"
   ble_svc_limits_uuid: "4fafc205-1fb5-459e-8fcc-c5c9c331914b"
-  ble_notify_interval: "1s"
+  ble_notify_interval: "3s"  # Reduced from 1s to minimize WiFi/BLE radio contention
 
 # Configure BLE stack for dual role (client + server)
 esp32_ble:
   io_capability: none
-  max_connections: 5
+  max_connections: 3  # Reduced to lower BLE stack memory usage
 
 globals:
   - id: bms${bms_id}_ble_client_connected

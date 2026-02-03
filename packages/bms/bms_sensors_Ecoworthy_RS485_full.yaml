@@ -83,13 +83,13 @@ binary_sensor:
     discharging:
       device_id: bms_${bms_id}
       name: "discharging active"
-    # charge_mos = charging is allowed/permitted (MOS on)
-    charge_mos:
+    # charging_switch = charging is allowed/permitted (MOS on)
+    charging_switch:
       id: bms${bms_id}_charge_mos_internal
       device_id: bms_${bms_id}
       internal: true
-    # discharge_mos = discharging is allowed/permitted (MOS on)
-    discharge_mos:
+    # discharging_switch = discharging is allowed/permitted (MOS on)
+    discharging_switch:
       id: bms${bms_id}_discharge_mos_internal
       device_id: bms_${bms_id}
       internal: true
@@ -111,186 +111,364 @@ binary_sensor:
       return id(bms${bms_id}_discharge_mos_internal).state;
 
 sensor:
+  # Fast-changing sensors - update frequently (voltage, current, power, SOC)
   - platform: ecoworthy_bms
     ecoworthy_bms_id: ecoworthy_bms${bms_id}
     total_voltage:
       id: bms${bms_id}_total_voltage
       device_id: bms_${bms_id}
       name: "total voltage"
+      filters:
+        - or:
+          - throttle: 5s
+          - delta: 0.1
     current:
       id: bms${bms_id}_current
       device_id: bms_${bms_id}
       name: "current"
+      filters:
+        - or:
+          - throttle: 5s
+          - delta: 0.5
     power:
       id: bms${bms_id}_power
       device_id: bms_${bms_id}
       name: "power"
+      filters:
+        - or:
+          - throttle: 5s
+          - delta: 5
     charging_power:
       id: bms${bms_id}_charging_power
       device_id: bms_${bms_id}
       name: "charging power"
+      filters:
+        - or:
+          - throttle: 5s
+          - delta: 5
     discharging_power:
       id: bms${bms_id}_discharging_power
       device_id: bms_${bms_id}
       name: "discharging power"
-    remaining_capacity:
-      id: bms${bms_id}_capacity_remaining_ah
-      device_id: bms_${bms_id}
-      name: "remaining capacity"
-    full_capacity:
-      id: bms${bms_id}_battery_capacity
-      device_id: bms_${bms_id}
-      name: "total capacity"
-    rated_capacity:
-      device_id: bms_${bms_id}
-      name: "rated capacity"
+      filters:
+        - or:
+          - throttle: 5s
+          - delta: 5
     state_of_charge:
       id: bms${bms_id}_state_of_charge
       device_id: bms_${bms_id}
       name: "state of charge"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 1
+    # Slow-changing sensors - update less frequently
+    remaining_capacity:
+      id: bms${bms_id}_capacity_remaining_ah
+      device_id: bms_${bms_id}
+      name: "remaining capacity"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 1
+    full_capacity:
+      id: bms${bms_id}_battery_capacity
+      device_id: bms_${bms_id}
+      name: "total capacity"
+      filters:
+        - throttle: 60s
+    rated_capacity:
+      device_id: bms_${bms_id}
+      name: "rated capacity"
+      filters:
+        - throttle: 60s
     state_of_health:
       id: bms${bms_id}_battery_soh
       device_id: bms_${bms_id}
       name: "state of health"
+      filters:
+        - throttle: 60s
     cycle_count:
       id: bms${bms_id}_charging_cycles_raw
       device_id: bms_${bms_id}
       name: "cycle"
+      filters:
+        - throttle: 60s
+    # Cell voltage sensors - important but throttle to reduce traffic
     min_cell_voltage:
       id: bms${bms_id}_min_cell_voltage
       device_id: bms_${bms_id}
       name: "min cell voltage"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     max_cell_voltage:
       id: bms${bms_id}_max_cell_voltage
       device_id: bms_${bms_id}
       name: "max cell voltage"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     delta_cell_voltage:
       id: bms${bms_id}_delta_cell_voltage
       device_id: bms_${bms_id}
       name: "delta cell voltage"
-    cell_average_voltage:
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.002
+    average_cell_voltage:
       id: bms${bms_id}_cell_average_voltage
       device_id: bms_${bms_id}
       name: "cell average voltage"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     min_voltage_cell:
       id: bms${bms_id}_min_voltage_cell
       device_id: bms_${bms_id}
       name: "min voltage cell"
+      filters:
+        - throttle: 10s
     max_voltage_cell:
       id: bms${bms_id}_max_voltage_cell
       device_id: bms_${bms_id}
       name: "max voltage cell"
+      filters:
+        - throttle: 10s
+    # Cell voltage sensors - throttle to reduce traffic
     cell_voltage_1:
       id: bms${bms_id}_cell_voltage_1
       device_id: bms_${bms_id}
       name: "cell voltage 01"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_2:
       id: bms${bms_id}_cell_voltage_2
       device_id: bms_${bms_id}
       name: "cell voltage 02"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_3:
       id: bms${bms_id}_cell_voltage_3
       device_id: bms_${bms_id}
       name: "cell voltage 03"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_4:
       id: bms${bms_id}_cell_voltage_4
       device_id: bms_${bms_id}
       name: "cell voltage 04"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_5:
       id: bms${bms_id}_cell_voltage_5
       device_id: bms_${bms_id}
       name: "cell voltage 05"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_6:
       id: bms${bms_id}_cell_voltage_6
       device_id: bms_${bms_id}
       name: "cell voltage 06"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_7:
       id: bms${bms_id}_cell_voltage_7
       device_id: bms_${bms_id}
       name: "cell voltage 07"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_8:
       id: bms${bms_id}_cell_voltage_8
       device_id: bms_${bms_id}
       name: "cell voltage 08"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_9:
       id: bms${bms_id}_cell_voltage_9
       device_id: bms_${bms_id}
       name: "cell voltage 09"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_10:
       id: bms${bms_id}_cell_voltage_10
       device_id: bms_${bms_id}
       name: "cell voltage 10"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_11:
       id: bms${bms_id}_cell_voltage_11
       device_id: bms_${bms_id}
       name: "cell voltage 11"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_12:
       id: bms${bms_id}_cell_voltage_12
       device_id: bms_${bms_id}
       name: "cell voltage 12"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_13:
       id: bms${bms_id}_cell_voltage_13
       device_id: bms_${bms_id}
       name: "cell voltage 13"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_14:
       id: bms${bms_id}_cell_voltage_14
       device_id: bms_${bms_id}
       name: "cell voltage 14"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_15:
       id: bms${bms_id}_cell_voltage_15
       device_id: bms_${bms_id}
       name: "cell voltage 15"
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
     cell_voltage_16:
       id: bms${bms_id}_cell_voltage_16
       device_id: bms_${bms_id}
       name: "cell voltage 16"
-    temperature_1:
+      filters:
+        - or:
+          - throttle: 10s
+          - delta: 0.005
+    # Temperature sensors - slow-changing
+    temperature_sensor_1:
       id: bms${bms_id}_temperature_sensor_1
       device_id: bms_${bms_id}
       name: "cell temperature 1"
-    temperature_2:
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
+    temperature_sensor_2:
       id: bms${bms_id}_temperature_sensor_2
       device_id: bms_${bms_id}
       name: "cell temperature 2"
-    temperature_3:
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
+    temperature_sensor_3:
       id: bms${bms_id}_temperature_sensor_3
       device_id: bms_${bms_id}
       name: "cell temperature 3"
-    temperature_4:
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
+    temperature_sensor_4:
       id: bms${bms_id}_temperature_sensor_4
       device_id: bms_${bms_id}
       name: "cell temperature 4"
-    mosfet_temperature:
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
+    power_tube_temperature:
       device_id: bms_${bms_id}
       name: "mosfet temperature"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
     ambient_temperature:
       device_id: bms_${bms_id}
       name: "ambient temperature"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
     min_temperature:
       id: bms${bms_id}_min_temperature
       device_id: bms_${bms_id}
       name: "min temperature"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
     max_temperature:
       id: bms${bms_id}_max_temperature
       device_id: bms_${bms_id}
       name: "max temperature"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
     avg_temperature:
       device_id: bms_${bms_id}
       name: "average temperature"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.5
+    # Limits and bitmasks - update on change only
     charge_voltage_limit:
       device_id: bms_${bms_id}
       name: "charge voltage limit"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.1
     charge_current_limit:
       id: bms${bms_id}_max_charge_current
       device_id: bms_${bms_id}
       name: "max charging current"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 1
     discharge_voltage_limit:
       device_id: bms_${bms_id}
       name: "discharge voltage limit"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 0.1
     discharge_current_limit:
       id: bms${bms_id}_max_discharge_current
       device_id: bms_${bms_id}
       name: "max discharge current"
+      filters:
+        - or:
+          - throttle: 30s
+          - delta: 1
     fault_bitmask:
       id: bms${bms_id}_fault_bitmask
       device_id: bms_${bms_id}
@@ -309,6 +487,88 @@ sensor:
       id: bms${bms_id}_balancing_bitmask
       device_id: bms_${bms_id}
       name: "balancing bitmask"
+
+  # Configuration sensors from 0x1C00 and 0x2000 blocks
+  # These change rarely, so throttle to reduce HA API traffic
+  - platform: ecoworthy_bms
+    ecoworthy_bms_id: ecoworthy_bms${bms_id}
+    balance_voltage:
+      device_id: bms_${bms_id}
+      name: "balance start voltage"
+      filters:
+        - throttle: 60s
+    balance_difference:
+      device_id: bms_${bms_id}
+      name: "balance difference"
+      filters:
+        - throttle: 60s
+    heater_start_temp:
+      device_id: bms_${bms_id}
+      name: "heater start temperature"
+      filters:
+        - throttle: 60s
+    heater_stop_temp:
+      device_id: bms_${bms_id}
+      name: "heater stop temperature"
+      filters:
+        - throttle: 60s
+    full_charge_voltage:
+      device_id: bms_${bms_id}
+      name: "full charge voltage"
+      filters:
+        - throttle: 60s
+    full_charge_current:
+      device_id: bms_${bms_id}
+      name: "full charge current"
+      filters:
+        - throttle: 60s
+    sleep_voltage:
+      device_id: bms_${bms_id}
+      name: "sleep voltage"
+      filters:
+        - throttle: 60s
+    sleep_delay:
+      device_id: bms_${bms_id}
+      name: "sleep delay"
+      filters:
+        - throttle: 60s
+    total_charge:
+      device_id: bms_${bms_id}
+      name: "total charge"
+      icon: mdi:battery-charging-100
+      filters:
+        - throttle: 60s
+    total_discharge:
+      device_id: bms_${bms_id}
+      name: "total discharge"
+      icon: mdi:battery-outline
+      filters:
+        - throttle: 60s
+    configured_cvl:
+      device_id: bms_${bms_id}
+      name: "configured CVL"
+      filters:
+        - throttle: 60s
+    configured_ccl:
+      device_id: bms_${bms_id}
+      name: "configured CCL"
+      filters:
+        - throttle: 60s
+    configured_dvl:
+      device_id: bms_${bms_id}
+      name: "configured DVL"
+      filters:
+        - throttle: 60s
+    configured_dcl:
+      device_id: bms_${bms_id}
+      name: "configured DCL"
+      filters:
+        - throttle: 60s
+    shunt_resistance:
+      device_id: bms_${bms_id}
+      name: "shunt resistance"
+      filters:
+        - throttle: 60s
 
   # Required sensors - balance trigger voltage (configurable via substitution)
   - platform: template
@@ -375,6 +635,44 @@ sensor:
         - delta: 1
     lambda: return id(bms${bms_id}_charging_cycles_raw).state * id(bms${bms_id}_battery_capacity).state;
 
+# +--------------------------------------+
+# | MOS Control Switches                 |
+# +--------------------------------------+
+
+switch:
+  - platform: ecoworthy_bms
+    ecoworthy_bms_id: ecoworthy_bms${bms_id}
+    charging:
+      id: bms${bms_id}_switch_charging
+      device_id: bms_${bms_id}
+      name: "charge MOS"
+      icon: mdi:battery-charging
+    discharging:
+      id: bms${bms_id}_switch_discharging
+      device_id: bms_${bms_id}
+      name: "discharge MOS"
+      icon: mdi:battery-arrow-down
+
+# +--------------------------------------+
+# | Sleep Mode Buttons                   |
+# +--------------------------------------+
+
+button:
+  - platform: ecoworthy_bms
+    ecoworthy_bms_id: ecoworthy_bms${bms_id}
+    standby_sleep:
+      device_id: bms_${bms_id}
+      name: "standby sleep"
+      icon: mdi:sleep
+    deep_sleep:
+      device_id: bms_${bms_id}
+      name: "deep sleep"
+      icon: mdi:power-sleep
+
+# +--------------------------------------+
+# | Text Sensors                         |
+# +--------------------------------------+
+
 text_sensor:
   - platform: ecoworthy_bms
     ecoworthy_bms_id: ecoworthy_bms${bms_id}
@@ -398,3 +696,27 @@ text_sensor:
     firmware_version:
       device_id: bms_${bms_id}
       name: "firmware version"
+    bms_serial_number:
+      device_id: bms_${bms_id}
+      name: "BMS serial number"
+    pack_serial_number:
+      device_id: bms_${bms_id}
+      name: "pack serial number"
+    manufacturer:
+      device_id: bms_${bms_id}
+      name: "manufacturer"
+    bms_model:
+      device_id: bms_${bms_id}
+      name: "BMS model"
+    balance_mode:
+      device_id: bms_${bms_id}
+      name: "balance mode"
+    can_protocol:
+      device_id: bms_${bms_id}
+      name: "CAN protocol"
+    rs485_protocol:
+      device_id: bms_${bms_id}
+      name: "RS485 protocol"
+    hardware_version:
+      device_id: bms_${bms_id}
+      name: "hardware version"

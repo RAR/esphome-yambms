@@ -59,7 +59,7 @@ text_sensor:
     device_id: bms_${bms_id}
     name: "errors"
     icon: mdi:alert-circle-outline
-    update_interval: ${bms_update_interval}
+    update_interval: 10s  # Check every 10s instead of every BMS update
     lambda: |-
       std::string errors = "";
       
