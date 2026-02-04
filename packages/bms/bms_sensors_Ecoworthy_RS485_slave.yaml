@@ -37,6 +37,9 @@
 #   bms_cell_ovp: Cell over-voltage protection in V (default: 3.650)
 #   bms_cell_uvp: Cell under-voltage protection in V (default: 2.500)
 #   bms_balance_trigger_voltage: Balance trigger voltage in V (default: 0.030)
+#
+# Note: Slave batteries only have access to Pack Status data (not config blocks).
+#       balance_trigger_voltage must be set via substitution for slaves.
 
 packages:
   bms_base: !include bms_base.yaml

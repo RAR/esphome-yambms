@@ -32,12 +32,10 @@
 #   bms_update_interval: Update interval (e.g., '3s')
 #
 # Optional substitutions:
-#   bms_max_charge_current: Max charge current in A (default: 100)
-#   bms_max_discharge_current: Max discharge current in A (default: 100)
-#   bms_cell_ovp: Cell over-voltage protection in V (default: 3.650)
-#   bms_cell_uvp: Cell under-voltage protection in V (default: 2.500)
-#   bms_balance_trigger_voltage: Balance trigger voltage in V (default: 0.030)
 #   bms_battery_count: Number of batteries to poll (1=master only, 2+=master+slaves)
+#
+# Note: Protection thresholds (cell OVP/UVP, pack OVP/UVP) and balance settings
+#       are now read directly from BMS config registers
 
 substitutions:
   bms_battery_count: '1'
@@ -298,6 +296,13 @@ sensor:
       id: bms${bms_id}_max_discharge_current
       device_id: bms_${bms_id}
       name: "max discharge current"
+    # Individual battery limits from 0x45 (master only, not aggregated)
+    individual_charge_current_limit:
+      device_id: bms_${bms_id}
+      name: "individual charge current limit"
+    individual_discharge_current_limit:
+      device_id: bms_${bms_id}
+      name: "individual discharge current limit"
     fault_bitmask:
       id: bms${bms_id}_fault_bitmask
       device_id: bms_${bms_id}
@@ -316,54 +321,228 @@ sensor:
       id: bms${bms_id}_balancing_bitmask
       device_id: bms_${bms_id}
       name: "balancing bitmask"
-
-  # Required sensors - balance trigger voltage (configurable via substitution)
-  - platform: template
-    id: bms${bms_id}_bms_balance_trigger_voltage
-    device_id: bms_${bms_id}
-    name: "balance trigger voltage"
-    update_interval: ${bms_update_interval}
-    accuracy_decimals: 3
-    unit_of_measurement: "V"
-    state_class: measurement
-    device_class: 'voltage'
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 0.001
-    lambda: return ${bms_balance_trigger_voltage};
-
-  # Cell OVP (configurable via substitution)
-  - platform: template
-    id: bms${bms_id}_cell_ovp
-    device_id: bms_${bms_id}
-    name: "cell ovp"
-    update_interval: ${bms_update_interval}
-    accuracy_decimals: 3
-    unit_of_measurement: "V"
-    state_class: measurement
-    device_class: 'voltage'
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 0.001
-    lambda: return ${bms_cell_ovp};
-
-  # Cell UVP (configurable via substitution)
-  - platform: template
-    id: bms${bms_id}_cell_uvp
-    device_id: bms_${bms_id}
-    name: "cell uvp"
-    update_interval: ${bms_update_interval}
-    accuracy_decimals: 3
-    unit_of_measurement: "V"
-    state_class: measurement
-    device_class: 'voltage'
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 0.001
-    lambda: return ${bms_cell_uvp};
+    # Balance trigger voltage from BMS config (used by balancer template sensor)
+    balance_voltage:
+      id: bms${bms_id}_bms_balance_trigger_voltage
+      internal: true
+    # Balance difference threshold from BMS config
+    balance_difference:
+      device_id: bms_${bms_id}
+      name: "balance difference"
+      filters:
+        - throttle: 60s
+    # Cell protection thresholds from BMS config (rarely change)
+    cell_ovp_trigger:
+      id: bms${bms_id}_cell_ovp
+      device_id: bms_${bms_id}
+      name: "cell ovp"
+      filters:
+        - throttle: 60s
+    cell_ovp_release:
+      device_id: bms_${bms_id}
+      name: "cell ovp release"
+      filters:
+        - throttle: 60s
+    cell_uvp_trigger:
+      id: bms${bms_id}_cell_uvp
+      device_id: bms_${bms_id}
+      name: "cell uvp"
+      filters:
+        - throttle: 60s
+    cell_uvp_release:
+      device_id: bms_${bms_id}
+      name: "cell uvp release"
+      filters:
+        - throttle: 60s
+    # Pack protection thresholds from BMS config (rarely change)
+    pack_ovp_trigger:
+      device_id: bms_${bms_id}
+      name: "pack ovp"
+      filters:
+        - throttle: 60s
+    pack_ovp_release:
+      device_id: bms_${bms_id}
+      name: "pack ovp release"
+      filters:
+        - throttle: 60s
+    pack_uvp_trigger:
+      device_id: bms_${bms_id}
+      name: "pack uvp"
+      filters:
+        - throttle: 60s
+    pack_uvp_release:
+      device_id: bms_${bms_id}
+      name: "pack uvp release"
+      filters:
+        - throttle: 60s
+    # Temperature protection thresholds from BMS config (rarely change)
+    charge_ot_trigger:
+      device_id: bms_${bms_id}
+      name: "charge ot trigger"
+      filters:
+        - throttle: 60s
+    charge_ot_release:
+      device_id: bms_${bms_id}
+      name: "charge ot release"
+      filters:
+        - throttle: 60s
+    charge_ot_delay:
+      device_id: bms_${bms_id}
+      name: "charge ot delay"
+      filters:
+        - throttle: 60s
+    charge_ut_trigger:
+      device_id: bms_${bms_id}
+      name: "charge ut trigger"
+      filters:
+        - throttle: 60s
+    charge_ut_release:
+      device_id: bms_${bms_id}
+      name: "charge ut release"
+      filters:
+        - throttle: 60s
+    charge_ut_delay:
+      device_id: bms_${bms_id}
+      name: "charge ut delay"
+      filters:
+        - throttle: 60s
+    discharge_ot_trigger:
+      device_id: bms_${bms_id}
+      name: "discharge ot trigger"
+      filters:
+        - throttle: 60s
+    discharge_ot_release:
+      device_id: bms_${bms_id}
+      name: "discharge ot release"
+      filters:
+        - throttle: 60s
+    discharge_ot_delay:
+      device_id: bms_${bms_id}
+      name: "discharge ot delay"
+      filters:
+        - throttle: 60s
+    discharge_ut_trigger:
+      device_id: bms_${bms_id}
+      name: "discharge ut trigger"
+      filters:
+        - throttle: 60s
+    discharge_ut_release:
+      device_id: bms_${bms_id}
+      name: "discharge ut release"
+      filters:
+        - throttle: 60s
+    discharge_ut_delay:
+      device_id: bms_${bms_id}
+      name: "discharge ut delay"
+      filters:
+        - throttle: 60s
+    # Current protection thresholds from BMS config (rarely change)
+    charge_oc_alarm:
+      device_id: bms_${bms_id}
+      name: "charge oc alarm"
+      filters:
+        - throttle: 60s
+    charge_oc_alarm_delay:
+      device_id: bms_${bms_id}
+      name: "charge oc alarm delay"
+      filters:
+        - throttle: 60s
+    charge_oc_trigger:
+      device_id: bms_${bms_id}
+      name: "charge oc trigger"
+      filters:
+        - throttle: 60s
+    charge_oc_delay:
+      device_id: bms_${bms_id}
+      name: "charge oc delay"
+      filters:
+        - throttle: 60s
+    charge_oc_recover_delay:
+      device_id: bms_${bms_id}
+      name: "charge oc recover delay"
+      filters:
+        - throttle: 60s
+    charge_oc2_trigger:
+      device_id: bms_${bms_id}
+      name: "charge oc2 trigger"
+      filters:
+        - throttle: 60s
+    charge_oc2_delay:
+      device_id: bms_${bms_id}
+      name: "charge oc2 delay"
+      filters:
+        - throttle: 60s
+    discharge_oc_alarm:
+      device_id: bms_${bms_id}
+      name: "discharge oc alarm"
+      filters:
+        - throttle: 60s
+    discharge_oc_alarm_delay:
+      device_id: bms_${bms_id}
+      name: "discharge oc alarm delay"
+      filters:
+        - throttle: 60s
+    discharge_oc_trigger:
+      device_id: bms_${bms_id}
+      name: "discharge oc trigger"
+      filters:
+        - throttle: 60s
+    discharge_oc_delay:
+      device_id: bms_${bms_id}
+      name: "discharge oc delay"
+      filters:
+        - throttle: 60s
+    discharge_oc_recover_delay:
+      device_id: bms_${bms_id}
+      name: "discharge oc recover delay"
+      filters:
+        - throttle: 60s
+    discharge_oc2_trigger:
+      device_id: bms_${bms_id}
+      name: "discharge oc2 trigger"
+      filters:
+        - throttle: 60s
+    discharge_oc2_delay:
+      device_id: bms_${bms_id}
+      name: "discharge oc2 delay"
+      filters:
+        - throttle: 60s
+    # Misc config sensors
+    heater_start_temp:
+      device_id: bms_${bms_id}
+      name: "heater start temp"
+      filters:
+        - throttle: 60s
+    heater_stop_temp:
+      device_id: bms_${bms_id}
+      name: "heater stop temp"
+      filters:
+        - throttle: 60s
+    full_charge_voltage:
+      device_id: bms_${bms_id}
+      name: "full charge voltage"
+      filters:
+        - throttle: 60s
+    full_charge_current:
+      device_id: bms_${bms_id}
+      name: "full charge current"
+      filters:
+        - throttle: 60s
+    sleep_voltage:
+      device_id: bms_${bms_id}
+      name: "sleep voltage"
+      filters:
+        - throttle: 60s
+    sleep_delay:
+      device_id: bms_${bms_id}
+      name: "sleep delay"
+      filters:
+        - throttle: 60s
+    shunt_resistance:
+      device_id: bms_${bms_id}
+      name: "shunt resistance"
+      filters:
+        - throttle: 60s
 
   # Charging cycle capacity - Calculated from charging cycles and battery capacity
   - platform: template
@@ -399,9 +578,42 @@ text_sensor:
       device_id: bms_${bms_id}
       name: "alarm"
       internal: true
-    serial_number:
+    # Product info
+    manufacturer:
       device_id: bms_${bms_id}
-      name: "serial number"
+      name: "manufacturer"
+    bms_model:
+      device_id: bms_${bms_id}
+      name: "bms model"
+    bms_serial_number:
+      device_id: bms_${bms_id}
+      name: "bms serial number"
+    pack_serial_number:
+      device_id: bms_${bms_id}
+      name: "pack serial number"
     firmware_version:
       device_id: bms_${bms_id}
       name: "firmware version"
+    hardware_version:
+      device_id: bms_${bms_id}
+      name: "hardware version"
+    # Config text sensors
+    balance_mode:
+      device_id: bms_${bms_id}
+      name: "balance mode"
+    can_protocol:
+      device_id: bms_${bms_id}
+      name: "can protocol"
+    rs485_protocol:
+      device_id: bms_${bms_id}
+      name: "rs485 protocol"
+
+button:
+  - platform: ecoworthy_bms
+    ecoworthy_bms_id: ecoworthy_bms${bms_id}
+    trip:
+      device_id: bms_${bms_id}
+      name: "trip breaker"
+    trip_all:
+      device_id: bms_${bms_id}
+      name: "trip all breakers"
