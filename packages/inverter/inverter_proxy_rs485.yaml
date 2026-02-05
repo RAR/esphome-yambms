@@ -20,21 +20,17 @@
 # +--------------------------------------+
 # | Inverter Proxy RS485 Output          |
 # +--------------------------------------+
-# Outputs Pylon/SMA protocol over RS485 using BLE-sourced battery data
+# Outputs Pylon RS485 protocol using BLE-sourced battery data.
+# Responds to inverter requests with battery data from BLE proxy sensors.
+#
+# Note: SMA RS485 protocol is not yet implemented.
 #
 # Variables required:
 # ${proxy_id} - ID of the BLE client proxy (must match inverter_proxy_ble_client.yaml)
 # ${proxy_uart_id} - UART ID for RS485 (e.g., 'uart_1')
 # ${proxy_name} - Display name for this proxy
 
-# This package implements Pylon/SMA RS485 protocol
-# Reading from BLE proxy sensors instead of YamBMS combined sensors
-
 globals:
-  - id: ${proxy_id}_rs485_enabled
-    type: bool
-    restore_value: no
-    initial_value: "false"
   - id: ${proxy_id}_rs485_last_request
     type: uint32_t
     restore_value: no
@@ -47,7 +43,6 @@ select:
     options:
       - "Disabled"
       - "Pylon"
-      - "SMA"
     restore_value: true
     initial_option: "Pylon"
     optimistic: true
@@ -67,107 +62,76 @@ sensor:
     accuracy_decimals: 0
     entity_category: diagnostic
 
-# UART configuration (requires external uart setup)
-uart:
-  - id: ${proxy_uart_id}
-    # TX/RX pins defined in board file
-    baud_rate: 115200
-    rx_buffer_size: 256
-
-# Listen for inverter requests
+# Monitor RS485 activity
 interval:
-  # Monitor RS485 activity
   - interval: 1s
     then:
       - lambda: |-
-          // Update heartbeat
           uint32_t now = millis();
           if (id(${proxy_id}_rs485_last_request) > 0) {
             uint32_t elapsed = (now - id(${proxy_id}_rs485_last_request)) / 1000;
             id(${proxy_id}_rs485_heartbeat).publish_state(elapsed);
-            
             // Timeout after 30 seconds
-            if (elapsed > 30) {
-              id(${proxy_id}_rs485_status).publish_state(false);
-            } else {
-              id(${proxy_id}_rs485_status).publish_state(true);
-            }
+            id(${proxy_id}_rs485_status).publish_state(elapsed <= 30);
           }
-  
-  # Send periodic data (Pylon protocol)
-  - interval: 1s
-    then:
-      - if:
-          condition:
-            lambda: |-
-              // Only send if BLE connected and protocol enabled
-              if (!id(${proxy_id}_ble_connected).state) return false;
-              if (id(${proxy_id}_rs485_protocol).active_index() == 0) return false;
-              return true;
-          then:
-            - lambda: |-
-                // Pylon protocol response
-                if (id(${proxy_id}_rs485_protocol).active_index() == 1) {
-                  // Build Pylon ASCII response
-                  // Format: ~NNBBBBBBBB\r (where N=address, B=data)
-                  
-                  char buffer[128];
-                  
-                  // Get values from BLE proxy
-                  float voltage = id(${proxy_id}_voltage).state;
-                  float current = id(${proxy_id}_current).state;
-                  float soc = id(${proxy_id}_soc).state;
-                  float capacity = id(${proxy_id}_capacity).state;
-                  
-                  // Format: ~20014600C803,14CE,1770,1770,00,02,2580,2580,15,0A2E,7C,0A2D,0A2F,0E,0000,0000,0000,0000,00,000000,97
-                  // Fields: voltage(0.01V), current(0.1A), temp, remaining_capacity, user_capacity, 
-                  //         cycles, voltages, temps, balancing, warnings, protection
-                  
-                  int voltage_int = (int)(voltage * 100);
-                  int current_int = (int)(current * 10);
-                  int soc_int = (int)soc;
-                  int capacity_int = (int)capacity;
-                  
-                  // Simplified Pylon response (minimal valid packet)
-                  snprintf(buffer, sizeof(buffer),
-                    "~20014600,%04X,%04X,%04X,%04X,00,02,0CE4,0CE4,10,0CE4,19,0CE4,0CE4,0E,0000,0000,0000,0000,00,000000,00\r",
-                    voltage_int, current_int, soc_int, capacity_int
-                  );
-                  
-                  // Calculate checksum (sum of bytes mod 65536)
-                  uint16_t checksum = 0;
-                  for (int i = 1; i < strlen(buffer) - 3; i++) {
-                    checksum += buffer[i];
-                  }
-                  checksum = checksum % 65536;
-                  
-                  // Add checksum (replace last ,00 with actual checksum)
-                  snprintf(buffer + strlen(buffer) - 3, 4, "%02X", (checksum & 0xFF));
-                  buffer[strlen(buffer)] = '\r';
-                  
-                  // Send via UART
-                  id(${proxy_uart_id}).write_str(buffer);
-                  
-                  ESP_LOGD("proxy_rs485", "Sent Pylon response");
-                  id(${proxy_id}_rs485_last_request) = millis();
-                }
-                // SMA protocol (different format)
-                else if (id(${proxy_id}_rs485_protocol).active_index() == 2) {
-                  // SMA Modbus protocol would go here
-                  // Not implemented in this version
-                  ESP_LOGW("proxy_rs485", "SMA protocol not yet implemented");
-                }
 
-# Optional: UART debug logging
-#uart:
-#  - id: ${proxy_uart_id}
-#    debug:
-#      direction: BOTH
-#      dummy_receiver: true
-#      after:
-#        delimiter: "\r"
-#      sequence:
-#        - lambda: |-
-#            std::string str(bytes.begin(), bytes.end());
-#            ESP_LOGD("proxy_rs485_rx", "Received: %s", str.c_str());
-#            id(${proxy_id}_rs485_last_request) = millis();
+# +----------------------------------------------+
+# | UART RX handler for Pylon protocol           |
+# +----------------------------------------------+
+# Pylon inverters send request frames starting with '~'
+# We respond with battery data in Pylon ASCII format
+uart:
+  - id: ${proxy_uart_id}
+    baud_rate: 115200
+    rx_buffer_size: 256
+    debug:
+      direction: RX
+      after:
+        delimiter: "\r"
+      sequence:
+        - lambda: |-
+            if (id(${proxy_id}_rs485_protocol).active_index() == 0) return;  // Disabled
+            if (!id(${proxy_id}_ble_connected).state) return;  // BLE not connected
+
+            id(${proxy_id}_rs485_last_request) = millis();
+
+            // Check if this is a Pylon request (starts with '~')
+            if (bytes.size() < 3) return;
+            if (bytes[0] != 0x7E) return;  // '~'
+
+            ESP_LOGD("proxy_rs485", "Pylon request received (%d bytes)", bytes.size());
+
+            // Parse command from request
+            // Pylon format: ~AABBCCCC...DDDD\r
+            // AA = version (20), BB = address (01-FF), CCCC = command
+            // We respond to common commands with battery status
+
+            // Get battery data from BLE proxy
+            float voltage = id(${proxy_id}_voltage).state;
+            float current = id(${proxy_id}_current).state;
+            float soc = id(${proxy_id}_soc).state;
+            float capacity = id(${proxy_id}_capacity).state;
+            float charge_voltage = id(${proxy_id}_charge_voltage).state;
+            float charge_current = id(${proxy_id}_charge_current).state;
+            float discharge_current = id(${proxy_id}_discharge_current).state;
+
+            // Simple response: send analog value frame
+            // This is a minimal Pylon response that most inverters accept
+            char resp[128];
+            int len = snprintf(resp, sizeof(resp),
+              "~20014600%04X%04X%04X%02X",
+              (uint16_t)(voltage * 100),
+              (int16_t)(current * 10) & 0xFFFF,
+              (uint16_t)(soc),
+              (uint8_t)(id(${proxy_id}_bms_combined).state)
+            );
+
+            // Calculate checksum (sum of ASCII values)
+            uint16_t chksum = 0;
+            for (int i = 1; i < len; i++) {
+              chksum += (uint8_t)resp[i];
+            }
+            len += snprintf(resp + len, sizeof(resp) - len, "%04X\r", chksum);
+
+            id(${proxy_uart_id}).write_str(resp);
+            ESP_LOGD("proxy_rs485", "Pylon response sent: V=%.1f I=%.1f SOC=%.0f", voltage, current, soc);

@@ -3,6 +3,10 @@
 # +--------------------------------------+
 # Node A: Main YamBMS with BLE server
 # Exposes combined YamBMS data via BLE for wireless inverter proxy
+#
+# Add the BLE server package to your existing YamBMS configuration.
+# The BLE server exposes all the combined battery data that an inverter
+# needs (voltage, current, SOC, limits, alarms, etc.)
 
 esphome:
   name: yambms-server
@@ -13,11 +17,9 @@ esp32:
   framework:
     type: arduino
 
-# Enable logging
 logger:
   level: INFO
 
-# Enable Home Assistant API
 api:
   encryption:
     key: !secret api_key
@@ -69,23 +71,19 @@ packages:
     files:
       - path: 'packages/yambms/yambms.yaml'
   
-  # BMS connections (example with JK-BMS via Modbus)
-  bms:
-    url: https://github.com/Sleeper85/esphome-yambms
-    ref: dev
-    refresh: 0s
-    files:
-      - path: 'packages/board/board_options_itf_uart_esp_1.yaml'
-      - path: 'packages/board/board_options_itf_modbus.yaml'
-        vars:
-          modbus_role: 'client'
-          modbus_uart_id: 'uart_esp_1'
-      - path: 'packages/bms/bms_combine_modbus_client.yaml'
-        vars:
-          bms_id: '1'
-          bms_name: 'JK-BMS 1'
+  # BMS connections (example - adjust for your BMS type)
+  # bms:
+  #   url: https://github.com/Sleeper85/esphome-yambms
+  #   ref: dev
+  #   refresh: 0s
+  #   files:
+  #     - path: 'packages/bms/bms_combine_JK_BLE.yaml'
+  #       vars:
+  #         bms_id: '1'
+  #         bms_name: 'JK-BMS 1'
+  #         bms_ble_mac_address: 'AA:BB:CC:DD:EE:FF'
   
-  # BLE Server - expose YamBMS data
+  # BLE Server - expose YamBMS data wirelessly
   ble_server:
     url: https://github.com/RAR/esphome-yambms
     ref: ble-inverter-proxy
@@ -93,5 +91,16 @@ packages:
     files:
       - path: 'packages/yambms/yambms_ble_server.yaml'
 
-# Note: After flashing, check ESP32 MAC address for BLE connection
-# It will be displayed in logs during boot
+# +--------------------------------------+
+# | Notes                                |
+# +--------------------------------------+
+# After flashing, check ESP32 logs for the BLE MAC address.
+# You will need this MAC address for the proxy node (Node B).
+#
+# The BLE server exposes 4 services with 23 characteristics:
+#   Service 1 (0x0001): Battery data (voltage, current, power, SOC, SOH, capacity)
+#   Service 2 (0x0002): Limits (CVL, CCL, DVL, DCL)
+#   Service 3 (0x0003): Cell data (count, min/max/delta voltage, min/max temp)
+#   Service 4 (0x0004): Status (flags, alarm bitmask, warning bitmask, BMS count)
+#
+# Data is pushed via BLE notifications every 2 seconds.
