@@ -297,147 +297,147 @@ esp32_ble_server:
               memcpy(data, &counter, 4);
               return std::vector<uint8_t>(data, data + 4);
 
-  # Update BLE characteristics when YamBMS sensors change
-  interval:
-    - interval: 2s
-      then:
-        - lambda: |-
-            // Update all BLE characteristics
-            auto server = id(esp32_ble_server1);
+# Update BLE characteristics when YamBMS sensors change
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          // Update all BLE characteristics
+          auto server = id(esp32_ble_server1);
           
-            // Battery core data
-            float voltage = id(${yambms_id}_voltage).state;
-            float current = id(${yambms_id}_current).state;
-            float power = id(${yambms_id}_power).state;
-            float soc = id(${yambms_id}_soc).state;
-            float soh = id(${yambms_id}_soh).state;
-            float capacity = id(${yambms_id}_capacity_nominal).state;
+          // Battery core data
+          float voltage = id(${yambms_id}_voltage).state;
+          float current = id(${yambms_id}_current).state;
+          float power = id(${yambms_id}_power).state;
+          float soc = id(${yambms_id}_soc).state;
+          float soh = id(${yambms_id}_soh).state;
+          float capacity = id(${yambms_id}_capacity_nominal).state;
           
-            server->create_characteristic(
-              "${ble_service_battery_uuid}",
-              "00000101-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&voltage, sizeof(voltage));
+          server->create_characteristic(
+            "${ble_service_battery_uuid}",
+            "00000101-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&voltage, sizeof(voltage));
           
-            server->create_characteristic(
-              "${ble_service_battery_uuid}",
-              "00000102-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&current, sizeof(current));
+          server->create_characteristic(
+            "${ble_service_battery_uuid}",
+            "00000102-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&current, sizeof(current));
           
-            server->create_characteristic(
-              "${ble_service_battery_uuid}",
-              "00000103-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&power, sizeof(power));
+          server->create_characteristic(
+            "${ble_service_battery_uuid}",
+            "00000103-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&power, sizeof(power));
           
-            server->create_characteristic(
-              "${ble_service_battery_uuid}",
-              "00000104-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&soc, sizeof(soc));
+          server->create_characteristic(
+            "${ble_service_battery_uuid}",
+            "00000104-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&soc, sizeof(soc));
           
-            server->create_characteristic(
-              "${ble_service_battery_uuid}",
-              "00000105-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&soh, sizeof(soh));
+          server->create_characteristic(
+            "${ble_service_battery_uuid}",
+            "00000105-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&soh, sizeof(soh));
           
-            server->create_characteristic(
-              "${ble_service_battery_uuid}",
-              "00000106-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&capacity, sizeof(capacity));
+          server->create_characteristic(
+            "${ble_service_battery_uuid}",
+            "00000106-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&capacity, sizeof(capacity));
           
-            // Current limits
-            float max_charge = id(${yambms_id}_max_charge_current).state;
-            float max_discharge = id(${yambms_id}_max_discharge_current).state;
-            float charge_v = id(${yambms_id}_charging_voltage).state;
-            float discharge_v = id(${yambms_id}_discharging_voltage).state;
+          // Current limits
+          float max_charge = id(${yambms_id}_max_charge_current).state;
+          float max_discharge = id(${yambms_id}_max_discharge_current).state;
+          float charge_v = id(${yambms_id}_charging_voltage).state;
+          float discharge_v = id(${yambms_id}_discharging_voltage).state;
           
-            server->create_characteristic(
-              "${ble_service_limits_uuid}",
-              "00000201-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&max_charge, sizeof(max_charge));
+          server->create_characteristic(
+            "${ble_service_limits_uuid}",
+            "00000201-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&max_charge, sizeof(max_charge));
           
-            server->create_characteristic(
-              "${ble_service_limits_uuid}",
-              "00000202-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&max_discharge, sizeof(max_discharge));
+          server->create_characteristic(
+            "${ble_service_limits_uuid}",
+            "00000202-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&max_discharge, sizeof(max_discharge));
           
-            server->create_characteristic(
-              "${ble_service_limits_uuid}",
-              "00000203-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&charge_v, sizeof(charge_v));
+          server->create_characteristic(
+            "${ble_service_limits_uuid}",
+            "00000203-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&charge_v, sizeof(charge_v));
           
-            server->create_characteristic(
-              "${ble_service_limits_uuid}",
-              "00000204-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&discharge_v, sizeof(discharge_v));
+          server->create_characteristic(
+            "${ble_service_limits_uuid}",
+            "00000204-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&discharge_v, sizeof(discharge_v));
           
-            // Cell data
-            float cell_count = id(${yambms_id}_cell_count).state;
-            float cell_min = id(${yambms_id}_min_cell_voltage).state;
-            float cell_max = id(${yambms_id}_max_cell_voltage).state;
-            float cell_delta = id(${yambms_id}_delta_cell_voltage).state;
-            float temp_min = id(${yambms_id}_min_temperature).state;
-            float temp_max = id(${yambms_id}_max_temperature).state;
+          // Cell data
+          float cell_count = id(${yambms_id}_cell_count).state;
+          float cell_min = id(${yambms_id}_min_cell_voltage).state;
+          float cell_max = id(${yambms_id}_max_cell_voltage).state;
+          float cell_delta = id(${yambms_id}_delta_cell_voltage).state;
+          float temp_min = id(${yambms_id}_min_temperature).state;
+          float temp_max = id(${yambms_id}_max_temperature).state;
           
-            server->create_characteristic(
-              "${ble_service_cells_uuid}",
-              "00000301-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&cell_count, sizeof(cell_count));
+          server->create_characteristic(
+            "${ble_service_cells_uuid}",
+            "00000301-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&cell_count, sizeof(cell_count));
           
-            server->create_characteristic(
-              "${ble_service_cells_uuid}",
-              "00000302-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&cell_min, sizeof(cell_min));
+          server->create_characteristic(
+            "${ble_service_cells_uuid}",
+            "00000302-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&cell_min, sizeof(cell_min));
           
-            server->create_characteristic(
-              "${ble_service_cells_uuid}",
-              "00000303-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&cell_max, sizeof(cell_max));
+          server->create_characteristic(
+            "${ble_service_cells_uuid}",
+            "00000303-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&cell_max, sizeof(cell_max));
           
-            server->create_characteristic(
-              "${ble_service_cells_uuid}",
-              "00000304-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&cell_delta, sizeof(cell_delta));
+          server->create_characteristic(
+            "${ble_service_cells_uuid}",
+            "00000304-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&cell_delta, sizeof(cell_delta));
           
-            server->create_characteristic(
-              "${ble_service_cells_uuid}",
-              "00000305-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&temp_min, sizeof(temp_min));
+          server->create_characteristic(
+            "${ble_service_cells_uuid}",
+            "00000305-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&temp_min, sizeof(temp_min));
           
-            server->create_characteristic(
-              "${ble_service_cells_uuid}",
-              "00000306-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&temp_max, sizeof(temp_max));
+          server->create_characteristic(
+            "${ble_service_cells_uuid}",
+            "00000306-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&temp_max, sizeof(temp_max));
           
-            // Status and alarms
-            uint32_t status = 0;
-            if (id(${yambms_id}_charging).state) status |= (1 << 0);
-            if (id(${yambms_id}_charge_fet).state) status |= (1 << 1);
-            if (id(${yambms_id}_discharge_fet).state) status |= (1 << 2);
-            if (id(${yambms_id}_balancing).state) status |= (1 << 3);
+          // Status and alarms
+          uint32_t status = 0;
+          if (id(${yambms_id}_charging).state) status |= (1 << 0);
+          if (id(${yambms_id}_charge_fet).state) status |= (1 << 1);
+          if (id(${yambms_id}_discharge_fet).state) status |= (1 << 2);
+          if (id(${yambms_id}_balancing).state) status |= (1 << 3);
           
-            uint32_t alarms = 0;
-            if (id(${yambms_id}_cell_overvoltage).state) alarms |= (1 << 0);
-            if (id(${yambms_id}_cell_undervoltage).state) alarms |= (1 << 1);
-            if (id(${yambms_id}_temperature_high).state) alarms |= (1 << 2);
-            if (id(${yambms_id}_temperature_low).state) alarms |= (1 << 3);
-            if (id(${yambms_id}_charge_overcurrent).state) alarms |= (1 << 4);
-            if (id(${yambms_id}_discharge_overcurrent).state) alarms |= (1 << 5);
+          uint32_t alarms = 0;
+          if (id(${yambms_id}_cell_overvoltage).state) alarms |= (1 << 0);
+          if (id(${yambms_id}_cell_undervoltage).state) alarms |= (1 << 1);
+          if (id(${yambms_id}_temperature_high).state) alarms |= (1 << 2);
+          if (id(${yambms_id}_temperature_low).state) alarms |= (1 << 3);
+          if (id(${yambms_id}_charge_overcurrent).state) alarms |= (1 << 4);
+          if (id(${yambms_id}_discharge_overcurrent).state) alarms |= (1 << 5);
           
-            static uint32_t heartbeat = 0;
-            heartbeat++;
+          static uint32_t heartbeat = 0;
+          heartbeat++;
           
-            server->create_characteristic(
-              "${ble_service_status_uuid}",
-              "00000401-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&status, sizeof(status));
+          server->create_characteristic(
+            "${ble_service_status_uuid}",
+            "00000401-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&status, sizeof(status));
           
-            server->create_characteristic(
-              "${ble_service_status_uuid}",
-              "00000402-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&alarms, sizeof(alarms));
+          server->create_characteristic(
+            "${ble_service_status_uuid}",
+            "00000402-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&alarms, sizeof(alarms));
           
-            server->create_characteristic(
-              "${ble_service_status_uuid}",
-              "00000403-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-            )->set_value((uint8_t*)&heartbeat, sizeof(heartbeat));
+          server->create_characteristic(
+            "${ble_service_status_uuid}",
+            "00000403-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+          )->set_value((uint8_t*)&heartbeat, sizeof(heartbeat));
           
-            ESP_LOGD("ble_server", "Updated all characteristics");
+          ESP_LOGD("ble_server", "Updated all characteristics");
