@@ -1,0 +1,173 @@
+# Updated : 2026.02.05
+# Version : 1.7.0
+# GitHub  : https://github.com/Sleeper85/esphome-yambms
+
+# YamBMS ( Yet another multi-BMS Merging Solution )
+
+# This YAML is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
+
+# +--------------------------------------+
+# | Inverter Proxy RS485 Output          |
+# +--------------------------------------+
+# Outputs Pylon/SMA protocol over RS485 using BLE-sourced battery data
+#
+# Variables required:
+# ${proxy_id} - ID of the BLE client proxy (must match inverter_proxy_ble_client.yaml)
+# ${proxy_uart_id} - UART ID for RS485 (e.g., 'uart_1')
+# ${proxy_name} - Display name for this proxy
+
+# This package implements Pylon/SMA RS485 protocol
+# Reading from BLE proxy sensors instead of YamBMS combined sensors
+
+globals:
+  - id: ${proxy_id}_rs485_enabled
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: ${proxy_id}_rs485_last_request
+    type: uint32_t
+    restore_value: no
+    initial_value: "0"
+
+select:
+  - platform: template
+    name: "${proxy_name} RS485 Protocol"
+    id: ${proxy_id}_rs485_protocol
+    options:
+      - "Disabled"
+      - "Pylon"
+      - "SMA"
+    restore_value: true
+    initial_option: "Pylon"
+    optimistic: true
+    entity_category: config
+
+binary_sensor:
+  - platform: template
+    id: ${proxy_id}_rs485_status
+    name: "${proxy_name} RS485 Status"
+    entity_category: diagnostic
+
+sensor:
+  - platform: template
+    id: ${proxy_id}_rs485_heartbeat
+    name: "${proxy_name} RS485 Heartbeat"
+    unit_of_measurement: "s"
+    accuracy_decimals: 0
+    entity_category: diagnostic
+
+# UART configuration (requires external uart setup)
+uart:
+  - id: ${proxy_uart_id}
+    # TX/RX pins defined in board file
+    baud_rate: 115200
+    rx_buffer_size: 256
+
+# Listen for inverter requests
+interval:
+  # Monitor RS485 activity
+  - interval: 1s
+    then:
+      - lambda: |-
+          // Update heartbeat
+          uint32_t now = millis();
+          if (id(${proxy_id}_rs485_last_request) > 0) {
+            uint32_t elapsed = (now - id(${proxy_id}_rs485_last_request)) / 1000;
+            id(${proxy_id}_rs485_heartbeat).publish_state(elapsed);
+            
+            // Timeout after 30 seconds
+            if (elapsed > 30) {
+              id(${proxy_id}_rs485_status).publish_state(false);
+            } else {
+              id(${proxy_id}_rs485_status).publish_state(true);
+            }
+          }
+  
+  # Send periodic data (Pylon protocol)
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              // Only send if BLE connected and protocol enabled
+              if (!id(${proxy_id}_ble_connected).state) return false;
+              if (id(${proxy_id}_rs485_protocol).active_index() == 0) return false;
+              return true;
+          then:
+            - lambda: |-
+                // Pylon protocol response
+                if (id(${proxy_id}_rs485_protocol).active_index() == 1) {
+                  // Build Pylon ASCII response
+                  // Format: ~NNBBBBBBBB\r (where N=address, B=data)
+                  
+                  char buffer[128];
+                  
+                  // Get values from BLE proxy
+                  float voltage = id(${proxy_id}_voltage).state;
+                  float current = id(${proxy_id}_current).state;
+                  float soc = id(${proxy_id}_soc).state;
+                  float capacity = id(${proxy_id}_capacity).state;
+                  
+                  // Format: ~20014600C803,14CE,1770,1770,00,02,2580,2580,15,0A2E,7C,0A2D,0A2F,0E,0000,0000,0000,0000,00,000000,97
+                  // Fields: voltage(0.01V), current(0.1A), temp, remaining_capacity, user_capacity, 
+                  //         cycles, voltages, temps, balancing, warnings, protection
+                  
+                  int voltage_int = (int)(voltage * 100);
+                  int current_int = (int)(current * 10);
+                  int soc_int = (int)soc;
+                  int capacity_int = (int)capacity;
+                  
+                  // Simplified Pylon response (minimal valid packet)
+                  snprintf(buffer, sizeof(buffer),
+                    "~20014600,%04X,%04X,%04X,%04X,00,02,0CE4,0CE4,10,0CE4,19,0CE4,0CE4,0E,0000,0000,0000,0000,00,000000,00\r",
+                    voltage_int, current_int, soc_int, capacity_int
+                  );
+                  
+                  // Calculate checksum (sum of bytes mod 65536)
+                  uint16_t checksum = 0;
+                  for (int i = 1; i < strlen(buffer) - 3; i++) {
+                    checksum += buffer[i];
+                  }
+                  checksum = checksum % 65536;
+                  
+                  // Add checksum (replace last ,00 with actual checksum)
+                  snprintf(buffer + strlen(buffer) - 3, 4, "%02X", (checksum & 0xFF));
+                  buffer[strlen(buffer)] = '\r';
+                  
+                  // Send via UART
+                  id(${proxy_uart_id}).write_str(buffer);
+                  
+                  ESP_LOGD("proxy_rs485", "Sent Pylon response");
+                  id(${proxy_id}_rs485_last_request) = millis();
+                }
+                // SMA protocol (different format)
+                else if (id(${proxy_id}_rs485_protocol).active_index() == 2) {
+                  // SMA Modbus protocol would go here
+                  // Not implemented in this version
+                  ESP_LOGW("proxy_rs485", "SMA protocol not yet implemented");
+                }
+
+# Optional: UART debug logging
+#uart:
+#  - id: ${proxy_uart_id}
+#    debug:
+#      direction: BOTH
+#      dummy_receiver: true
+#      after:
+#        delimiter: "\r"
+#      sequence:
+#        - lambda: |-
+#            std::string str(bytes.begin(), bytes.end());
+#            ESP_LOGD("proxy_rs485_rx", "Received: %s", str.c_str());
+#            id(${proxy_id}_rs485_last_request) = millis();

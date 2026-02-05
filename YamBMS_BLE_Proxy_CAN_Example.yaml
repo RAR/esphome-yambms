@@ -1,0 +1,122 @@
+# +--------------------------------------+
+# | BLE Inverter Proxy - CAN Example     |
+# +--------------------------------------+
+# Node B: BLE Client → CAN output
+# Connects to YamBMS BLE server and outputs to inverter via CAN
+
+esphome:
+  name: inverter-proxy-can
+  friendly_name: "Inverter Proxy CAN"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# +--------------------------------------+
+# | Proxy Configuration                  |
+# +--------------------------------------+
+substitutions:
+  friendly_name: 'Inverter Proxy CAN'
+  hostname: 'inverter-proxy-can'
+  proxy_id: 'inv_proxy'
+  proxy_name: 'Inverter Proxy'
+  
+  # BLE Server MAC address (Node A)
+  # Get this from Node A logs after first boot
+  # Format: XX:XX:XX:XX:XX:XX
+  yambms_server_mac: 'AA:BB:CC:DD:EE:FF'  # Change this!
+  
+  # CAN configuration
+  canbus_node_id: '1'
+  canbus_name: 'Inverter CAN'
+
+packages:
+  # Board with CAN interface
+  board:
+    url: https://github.com/RAR/esphome-yambms
+    ref: ble-inverter-proxy
+    refresh: 0s
+    files:
+      - path: 'packages/board/board_ESP32_Generic.yaml'
+  
+  # CAN bus interface
+  canbus:
+    url: https://github.com/RAR/esphome-yambms
+    ref: ble-inverter-proxy
+    refresh: 0s
+    files:
+      - path: 'packages/board/board_options_itf_can.yaml'
+        vars:
+          canbus_id: '1'
+          canbus_name: 'Inverter CAN'
+          canbus_light_id: 'can_status_led'
+          canbus_tx_pin: 'GPIO5'
+          canbus_rx_pin: 'GPIO4'
+  
+  # BLE Client - connect to YamBMS server
+  ble_client:
+    url: https://github.com/RAR/esphome-yambms
+    ref: ble-inverter-proxy
+    refresh: 0s
+    files:
+      - path: 'packages/inverter/inverter_proxy_ble_client.yaml'
+  
+  # CAN output to inverter
+  can_output:
+    url: https://github.com/RAR/esphome-yambms
+    ref: ble-inverter-proxy
+    refresh: 0s
+    files:
+      - path: 'packages/inverter/inverter_proxy_canbus.yaml'
+
+# +--------------------------------------+
+# | Protocol Selection                   |
+# +--------------------------------------+
+# Available protocols: PYLON_1.2, PYLON_PLUS_V2.0, SMA, VICTRON, LUXPOWER
+# Default is configured in inverter_proxy_canbus.yaml
+# Override here if needed:
+#
+# select:
+#   - id: !extend canbus1_protocol
+#     initial_option: "PYLON_PLUS_V2.0"
+
+# +--------------------------------------+
+# | Status LEDs (optional)               |
+# +--------------------------------------+
+light:
+  - platform: status_led
+    id: can_status_led
+    pin: GPIO2
+    name: "${canbus_name} Status"
+
+# +--------------------------------------+
+# | Setup Instructions                   |
+# +--------------------------------------+
+# 1. Flash Node A (YamBMS Server) first
+# 2. Check Node A logs for BLE MAC address
+# 3. Update yambms_server_mac above with Node A MAC
+# 4. Flash this Node B
+# 5. Node B will auto-connect to Node A
+# 6. Connect CAN TX/RX pins to inverter
+#    - TX: GPIO5 → CAN L
+#    - RX: GPIO4 → CAN H
+#    - Add 120Ω termination resistor if needed
+# 7. Monitor logs for connection status
