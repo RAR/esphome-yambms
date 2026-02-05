@@ -41,233 +41,201 @@ esp32_ble_server:
       characteristics:
         # Voltage (V)
         - uuid: '00000101-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Battery Voltage'
-          value: !lambda |-
-            float val = id(${yambms_id}_voltage).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Battery Voltage'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_voltage).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Current (A)
         - uuid: '00000102-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Battery Current'
-          value: !lambda |-
-            float val = id(${yambms_id}_current).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Battery Current'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_current).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Power (W)
         - uuid: '00000103-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Battery Power'
-          value: !lambda |-
-            float val = id(${yambms_id}_power).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Battery Power'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_power).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # SOC (%)
         - uuid: '00000104-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'State of Charge'
-          value: !lambda |-
-            float val = id(${yambms_id}_soc).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'State of Charge'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_soc).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # SOH (%)
         - uuid: '00000105-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'State of Health'
-          value: !lambda |-
-            float val = id(${yambms_id}_soh).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'State of Health'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_soh).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Capacity (Ah)
         - uuid: '00000106-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Battery Capacity'
-          value: !lambda |-
-            float val = id(${yambms_id}_capacity_nominal).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Battery Capacity'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_capacity_nominal).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
 
     # Service 2: Current limits
     - uuid: ${ble_service_limits_uuid}
       characteristics:
         # Max charge current (A)
         - uuid: '00000201-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Max Charge Current'
-          value: !lambda |-
-            float val = id(${yambms_id}_max_charge_current).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Max Charge Current'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_max_charge_current).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Max discharge current (A)
         - uuid: '00000202-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Max Discharge Current'
-          value: !lambda |-
-            float val = id(${yambms_id}_max_discharge_current).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Max Discharge Current'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_max_discharge_current).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Charge voltage limit (V)
         - uuid: '00000203-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Charge Voltage Limit'
-          value: !lambda |-
-            float val = id(${yambms_id}_charging_voltage).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Charge Voltage Limit'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_charging_voltage).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Discharge voltage limit (V)
         - uuid: '00000204-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Discharge Voltage Limit'
-          value: !lambda |-
-            float val = id(${yambms_id}_discharging_voltage).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Discharge Voltage Limit'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_discharging_voltage).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
 
     # Service 3: Cell data
     - uuid: ${ble_service_cells_uuid}
       characteristics:
         # Cell count
         - uuid: '00000301-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Cell Count'
-          value: !lambda |-
-            float val = id(${yambms_id}_cell_count).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Cell Count'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_cell_count).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Cell min voltage (V)
         - uuid: '00000302-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Cell Min Voltage'
-          value: !lambda |-
-            float val = id(${yambms_id}_min_cell_voltage).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Cell Min Voltage'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_min_cell_voltage).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Cell max voltage (V)
         - uuid: '00000303-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Cell Max Voltage'
-          value: !lambda |-
-            float val = id(${yambms_id}_max_cell_voltage).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Cell Max Voltage'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_max_cell_voltage).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Cell delta voltage (V)
         - uuid: '00000304-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Cell Delta Voltage'
-          value: !lambda |-
-            float val = id(${yambms_id}_delta_cell_voltage).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Cell Delta Voltage'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_delta_cell_voltage).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Temperature min (°C)
         - uuid: '00000305-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Min Temperature'
-          value: !lambda |-
-            float val = id(${yambms_id}_min_temperature).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Min Temperature'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_min_temperature).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Temperature max (°C)
         - uuid: '00000306-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Max Temperature'
-          value: !lambda |-
-            float val = id(${yambms_id}_max_temperature).state;
-            uint8_t data[4];
-            memcpy(data, &val, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Max Temperature'
+          value:
+            data: !lambda |-
+              float val = id(${yambms_id}_max_temperature).state;
+              uint8_t data[4];
+              memcpy(data, &val, 4);
+              return std::vector<uint8_t>(data, data + 4);
 
     # Service 4: Status and alarms
     - uuid: ${ble_service_status_uuid}
@@ -278,21 +246,19 @@ esp32_ble_server:
         # Bit 2: Discharge FET
         # Bit 3: Balancing
         - uuid: '00000401-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Status Flags'
-          value: !lambda |-
-            uint32_t flags = 0;
-            if (id(${yambms_id}_charging).state) flags |= (1 << 0);
-            if (id(${yambms_id}_charge_fet).state) flags |= (1 << 1);
-            if (id(${yambms_id}_discharge_fet).state) flags |= (1 << 2);
-            if (id(${yambms_id}_balancing).state) flags |= (1 << 3);
-            uint8_t data[4];
-            memcpy(data, &flags, 4);
-            return std::vector<uint8_t>(data, data + 4);
+          read: true
+          notify: true
+          description: 'Status Flags'
+          value:
+            data: !lambda |-
+              uint32_t flags = 0;
+              if (id(${yambms_id}_charging).state) flags |= (1 << 0);
+              if (id(${yambms_id}_charge_fet).state) flags |= (1 << 1);
+              if (id(${yambms_id}_discharge_fet).state) flags |= (1 << 2);
+              if (id(${yambms_id}_balancing).state) flags |= (1 << 3);
+              uint8_t data[4];
+              memcpy(data, &flags, 4);
+              return std::vector<uint8_t>(data, data + 4);
         
         # Alarm flags (uint32)
         # Bit 0: Cell OV
@@ -302,13 +268,152 @@ esp32_ble_server:
         # Bit 4: Charge OC
         # Bit 5: Discharge OC
         - uuid: '00000402-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Alarm Flags'
-          value: !lambda |-
+          read: true
+          notify: true
+          description: 'Alarm Flags'
+          value:
+            data: !lambda |-
+              uint32_t alarms = 0;
+              if (id(${yambms_id}_cell_overvoltage).state) alarms |= (1 << 0);
+              if (id(${yambms_id}_cell_undervoltage).state) alarms |= (1 << 1);
+              if (id(${yambms_id}_temperature_high).state) alarms |= (1 << 2);
+              if (id(${yambms_id}_temperature_low).state) alarms |= (1 << 3);
+              if (id(${yambms_id}_charge_overcurrent).state) alarms |= (1 << 4);
+              if (id(${yambms_id}_discharge_overcurrent).state) alarms |= (1 << 5);
+              uint8_t data[4];
+              memcpy(data, &alarms, 4);
+              return std::vector<uint8_t>(data, data + 4);
+        
+        # Heartbeat counter (uint32)
+        - uuid: '00000403-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
+          read: true
+          notify: true
+          description: 'Heartbeat'
+          value:
+            data: !lambda |-
+              static uint32_t counter = 0;
+              counter++;
+              uint8_t data[4];
+              memcpy(data, &counter, 4);
+              return std::vector<uint8_t>(data, data + 4);
+
+  # Update BLE characteristics when YamBMS sensors change
+  interval:
+    - interval: 2s
+      then:
+        - lambda: |-
+            // Update all BLE characteristics
+            auto server = id(esp32_ble_server1);
+          
+            // Battery core data
+            float voltage = id(${yambms_id}_voltage).state;
+            float current = id(${yambms_id}_current).state;
+            float power = id(${yambms_id}_power).state;
+            float soc = id(${yambms_id}_soc).state;
+            float soh = id(${yambms_id}_soh).state;
+            float capacity = id(${yambms_id}_capacity_nominal).state;
+          
+            server->create_characteristic(
+              "${ble_service_battery_uuid}",
+              "00000101-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&voltage, sizeof(voltage));
+          
+            server->create_characteristic(
+              "${ble_service_battery_uuid}",
+              "00000102-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&current, sizeof(current));
+          
+            server->create_characteristic(
+              "${ble_service_battery_uuid}",
+              "00000103-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&power, sizeof(power));
+          
+            server->create_characteristic(
+              "${ble_service_battery_uuid}",
+              "00000104-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&soc, sizeof(soc));
+          
+            server->create_characteristic(
+              "${ble_service_battery_uuid}",
+              "00000105-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&soh, sizeof(soh));
+          
+            server->create_characteristic(
+              "${ble_service_battery_uuid}",
+              "00000106-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&capacity, sizeof(capacity));
+          
+            // Current limits
+            float max_charge = id(${yambms_id}_max_charge_current).state;
+            float max_discharge = id(${yambms_id}_max_discharge_current).state;
+            float charge_v = id(${yambms_id}_charging_voltage).state;
+            float discharge_v = id(${yambms_id}_discharging_voltage).state;
+          
+            server->create_characteristic(
+              "${ble_service_limits_uuid}",
+              "00000201-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&max_charge, sizeof(max_charge));
+          
+            server->create_characteristic(
+              "${ble_service_limits_uuid}",
+              "00000202-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&max_discharge, sizeof(max_discharge));
+          
+            server->create_characteristic(
+              "${ble_service_limits_uuid}",
+              "00000203-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&charge_v, sizeof(charge_v));
+          
+            server->create_characteristic(
+              "${ble_service_limits_uuid}",
+              "00000204-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&discharge_v, sizeof(discharge_v));
+          
+            // Cell data
+            float cell_count = id(${yambms_id}_cell_count).state;
+            float cell_min = id(${yambms_id}_min_cell_voltage).state;
+            float cell_max = id(${yambms_id}_max_cell_voltage).state;
+            float cell_delta = id(${yambms_id}_delta_cell_voltage).state;
+            float temp_min = id(${yambms_id}_min_temperature).state;
+            float temp_max = id(${yambms_id}_max_temperature).state;
+          
+            server->create_characteristic(
+              "${ble_service_cells_uuid}",
+              "00000301-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&cell_count, sizeof(cell_count));
+          
+            server->create_characteristic(
+              "${ble_service_cells_uuid}",
+              "00000302-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&cell_min, sizeof(cell_min));
+          
+            server->create_characteristic(
+              "${ble_service_cells_uuid}",
+              "00000303-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&cell_max, sizeof(cell_max));
+          
+            server->create_characteristic(
+              "${ble_service_cells_uuid}",
+              "00000304-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&cell_delta, sizeof(cell_delta));
+          
+            server->create_characteristic(
+              "${ble_service_cells_uuid}",
+              "00000305-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&temp_min, sizeof(temp_min));
+          
+            server->create_characteristic(
+              "${ble_service_cells_uuid}",
+              "00000306-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&temp_max, sizeof(temp_max));
+          
+            // Status and alarms
+            uint32_t status = 0;
+            if (id(${yambms_id}_charging).state) status |= (1 << 0);
+            if (id(${yambms_id}_charge_fet).state) status |= (1 << 1);
+            if (id(${yambms_id}_discharge_fet).state) status |= (1 << 2);
+            if (id(${yambms_id}_balancing).state) status |= (1 << 3);
+          
             uint32_t alarms = 0;
             if (id(${yambms_id}_cell_overvoltage).state) alarms |= (1 << 0);
             if (id(${yambms_id}_cell_undervoltage).state) alarms |= (1 << 1);
@@ -316,166 +421,23 @@ esp32_ble_server:
             if (id(${yambms_id}_temperature_low).state) alarms |= (1 << 3);
             if (id(${yambms_id}_charge_overcurrent).state) alarms |= (1 << 4);
             if (id(${yambms_id}_discharge_overcurrent).state) alarms |= (1 << 5);
-            uint8_t data[4];
-            memcpy(data, &alarms, 4);
-            return std::vector<uint8_t>(data, data + 4);
-        
-        # Heartbeat counter (uint32)
-        - uuid: '00000403-ba5e-f4ee-5ca1-eb1e5e4b1ce0'
-          properties:
-            - read
-            - notify
-          descriptors:
-            - uuid: '2901'
-              value: 'Heartbeat'
-          value: !lambda |-
-            static uint32_t counter = 0;
-            counter++;
-            uint8_t data[4];
-            memcpy(data, &counter, 4);
-            return std::vector<uint8_t>(data, data + 4);
-
-# Update BLE characteristics when YamBMS sensors change
-interval:
-  - interval: 2s
-    then:
-      - lambda: |-
-          // Update all BLE characteristics
-          auto server = id(esp32_ble_server1);
           
-          // Battery core data
-          float voltage = id(${yambms_id}_voltage).state;
-          float current = id(${yambms_id}_current).state;
-          float power = id(${yambms_id}_power).state;
-          float soc = id(${yambms_id}_soc).state;
-          float soh = id(${yambms_id}_soh).state;
-          float capacity = id(${yambms_id}_capacity_nominal).state;
+            static uint32_t heartbeat = 0;
+            heartbeat++;
           
-          server->create_characteristic(
-            "${ble_service_battery_uuid}",
-            "00000101-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&voltage, sizeof(voltage));
+            server->create_characteristic(
+              "${ble_service_status_uuid}",
+              "00000401-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&status, sizeof(status));
           
-          server->create_characteristic(
-            "${ble_service_battery_uuid}",
-            "00000102-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&current, sizeof(current));
+            server->create_characteristic(
+              "${ble_service_status_uuid}",
+              "00000402-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&alarms, sizeof(alarms));
           
-          server->create_characteristic(
-            "${ble_service_battery_uuid}",
-            "00000103-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&power, sizeof(power));
+            server->create_characteristic(
+              "${ble_service_status_uuid}",
+              "00000403-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
+            )->set_value((uint8_t*)&heartbeat, sizeof(heartbeat));
           
-          server->create_characteristic(
-            "${ble_service_battery_uuid}",
-            "00000104-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&soc, sizeof(soc));
-          
-          server->create_characteristic(
-            "${ble_service_battery_uuid}",
-            "00000105-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&soh, sizeof(soh));
-          
-          server->create_characteristic(
-            "${ble_service_battery_uuid}",
-            "00000106-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&capacity, sizeof(capacity));
-          
-          // Current limits
-          float max_charge = id(${yambms_id}_max_charge_current).state;
-          float max_discharge = id(${yambms_id}_max_discharge_current).state;
-          float charge_v = id(${yambms_id}_charging_voltage).state;
-          float discharge_v = id(${yambms_id}_discharging_voltage).state;
-          
-          server->create_characteristic(
-            "${ble_service_limits_uuid}",
-            "00000201-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&max_charge, sizeof(max_charge));
-          
-          server->create_characteristic(
-            "${ble_service_limits_uuid}",
-            "00000202-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&max_discharge, sizeof(max_discharge));
-          
-          server->create_characteristic(
-            "${ble_service_limits_uuid}",
-            "00000203-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&charge_v, sizeof(charge_v));
-          
-          server->create_characteristic(
-            "${ble_service_limits_uuid}",
-            "00000204-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&discharge_v, sizeof(discharge_v));
-          
-          // Cell data
-          float cell_count = id(${yambms_id}_cell_count).state;
-          float cell_min = id(${yambms_id}_min_cell_voltage).state;
-          float cell_max = id(${yambms_id}_max_cell_voltage).state;
-          float cell_delta = id(${yambms_id}_delta_cell_voltage).state;
-          float temp_min = id(${yambms_id}_min_temperature).state;
-          float temp_max = id(${yambms_id}_max_temperature).state;
-          
-          server->create_characteristic(
-            "${ble_service_cells_uuid}",
-            "00000301-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&cell_count, sizeof(cell_count));
-          
-          server->create_characteristic(
-            "${ble_service_cells_uuid}",
-            "00000302-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&cell_min, sizeof(cell_min));
-          
-          server->create_characteristic(
-            "${ble_service_cells_uuid}",
-            "00000303-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&cell_max, sizeof(cell_max));
-          
-          server->create_characteristic(
-            "${ble_service_cells_uuid}",
-            "00000304-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&cell_delta, sizeof(cell_delta));
-          
-          server->create_characteristic(
-            "${ble_service_cells_uuid}",
-            "00000305-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&temp_min, sizeof(temp_min));
-          
-          server->create_characteristic(
-            "${ble_service_cells_uuid}",
-            "00000306-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&temp_max, sizeof(temp_max));
-          
-          // Status and alarms
-          uint32_t status = 0;
-          if (id(${yambms_id}_charging).state) status |= (1 << 0);
-          if (id(${yambms_id}_charge_fet).state) status |= (1 << 1);
-          if (id(${yambms_id}_discharge_fet).state) status |= (1 << 2);
-          if (id(${yambms_id}_balancing).state) status |= (1 << 3);
-          
-          uint32_t alarms = 0;
-          if (id(${yambms_id}_cell_overvoltage).state) alarms |= (1 << 0);
-          if (id(${yambms_id}_cell_undervoltage).state) alarms |= (1 << 1);
-          if (id(${yambms_id}_temperature_high).state) alarms |= (1 << 2);
-          if (id(${yambms_id}_temperature_low).state) alarms |= (1 << 3);
-          if (id(${yambms_id}_charge_overcurrent).state) alarms |= (1 << 4);
-          if (id(${yambms_id}_discharge_overcurrent).state) alarms |= (1 << 5);
-          
-          static uint32_t heartbeat = 0;
-          heartbeat++;
-          
-          server->create_characteristic(
-            "${ble_service_status_uuid}",
-            "00000401-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&status, sizeof(status));
-          
-          server->create_characteristic(
-            "${ble_service_status_uuid}",
-            "00000402-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&alarms, sizeof(alarms));
-          
-          server->create_characteristic(
-            "${ble_service_status_uuid}",
-            "00000403-ba5e-f4ee-5ca1-eb1e5e4b1ce0"
-          )->set_value((uint8_t*)&heartbeat, sizeof(heartbeat));
-          
-          ESP_LOGD("ble_server", "Updated all characteristics");
+            ESP_LOGD("ble_server", "Updated all characteristics");
