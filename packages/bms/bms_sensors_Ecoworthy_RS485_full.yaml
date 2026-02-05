@@ -115,6 +115,18 @@ binary_sensor:
     lambda: |-
       return id(bms${bms_id}_discharge_mos_internal).state;
 
+switch:
+  - platform: ecoworthy_bms
+    ecoworthy_bms_id: ecoworthy_bms${bms_id}
+    charging:
+      id: bms${bms_id}_charge_switch
+      device_id: bms_${bms_id}
+      name: "Charge switch"
+    discharging:
+      id: bms${bms_id}_discharge_switch
+      device_id: bms_${bms_id}
+      name: "Discharge switch"
+
 sensor:
   - platform: ecoworthy_bms
     ecoworthy_bms_id: ecoworthy_bms${bms_id}
