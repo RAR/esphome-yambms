@@ -37,10 +37,14 @@
 # +--------------------------------------+
 # | DIN BASE (M132) Configuration        |
 # +--------------------------------------+
-# The DIN BASE provides Port.B for native TWAI CAN (requires CAN transceiver unit):
-# - Port.B: PB_IN=G17, PB_OUT=G52
+# +--------------------------------------+
+# | DIN BASE (M132) Configuration        |
+# +--------------------------------------+
+# The DIN BASE provides Port.A and Port.B for native TWAI CAN (requires CAN transceiver unit):
+# - Port.A: PA_IN=G53, PA_OUT=G54 (M5-Bus pins 2,3)
+# - Port.B: PB_IN=G17, PB_OUT=G52 (M5-Bus pins 4,10)
 # Include board_options_itf_canbus_esp32_can.yaml for native CAN
-# Recommended: Use M5Stack CAN Unit (U085) or similar transceiver on Port.B
+# Recommended: Use M5Stack CAN Unit (U085) or PwrCAN Module (M013.2) on Port.A or Port.B
 #
 
 substitutions:
@@ -151,16 +155,6 @@ i2c:
     frequency: 400kHz
 
 # +--------------------------------------+
-# | SPI Bus                              |
-# +--------------------------------------+
-
-spi:
-  id: spi_bus
-  clk_pin: ${spi_clk_pin}
-  mosi_pin: ${spi_mosi_pin}
-  miso_pin: ${spi_miso_pin}
-
-# +--------------------------------------+
 # | ESP LDO for display                  |
 # +--------------------------------------+
 
@@ -201,6 +195,7 @@ switch:
     pin:
       pi4ioe5v6408: pi4ioe1
       number: 2
+    restore_mode: ALWAYS_ON
     entity_category: config
   - platform: gpio
     id: usb_5v_power
