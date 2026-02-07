@@ -47,12 +47,8 @@
 substitutions:
   bms_model: "YamBMS"
   bms_protocol: "BLE"
-  # Service UUIDs - must match server
-  ble_svc_status_uuid: "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-  ble_svc_battery_uuid: "4fafc202-1fb5-459e-8fcc-c5c9c331914b"
-  ble_svc_cell_uuid: "4fafc203-1fb5-459e-8fcc-c5c9c331914b"
-  ble_svc_temp_uuid: "4fafc204-1fb5-459e-8fcc-c5c9c331914b"
-  ble_svc_limits_uuid: "4fafc205-1fb5-459e-8fcc-c5c9c331914b"
+  # Service UUIDs embed bms_id_hex so each BMS gets unique services
+  # Format: 4fafc2XX-1fb5-459e-8fcc-c5c9c33191${bms_id_hex}
 
 packages:
   sub_device: !include bms_base_sub_device.yaml
@@ -117,7 +113,7 @@ sensor:
     id: bms${bms_id}_ble_status_reader
     internal: true
     type: characteristic
-    service_uuid: ${ble_svc_status_uuid}
+    service_uuid: "4fafc201-1fb5-459e-8fcc-c5c9c33191${bms_id_hex}"
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b201"
     notify: true
     lambda: |-
@@ -163,7 +159,7 @@ sensor:
     id: bms${bms_id}_ble_battery_reader
     internal: true
     type: characteristic
-    service_uuid: ${ble_svc_battery_uuid}
+    service_uuid: "4fafc202-1fb5-459e-8fcc-c5c9c33191${bms_id_hex}"
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b205"
     notify: true
     lambda: |-
@@ -333,7 +329,7 @@ sensor:
     id: bms${bms_id}_ble_cell_reader
     internal: true
     type: characteristic
-    service_uuid: ${ble_svc_cell_uuid}
+    service_uuid: "4fafc203-1fb5-459e-8fcc-c5c9c33191${bms_id_hex}"
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b20e"
     notify: true
     lambda: |-
@@ -410,7 +406,7 @@ sensor:
     id: bms${bms_id}_ble_temp_reader
     internal: true
     type: characteristic
-    service_uuid: ${ble_svc_temp_uuid}
+    service_uuid: "4fafc204-1fb5-459e-8fcc-c5c9c33191${bms_id_hex}"
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b212"
     notify: true
     lambda: |-
@@ -491,7 +487,7 @@ sensor:
     id: bms${bms_id}_ble_limits_reader
     internal: true
     type: characteristic
-    service_uuid: ${ble_svc_limits_uuid}
+    service_uuid: "4fafc205-1fb5-459e-8fcc-c5c9c33191${bms_id_hex}"
     characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b216"
     notify: true
     lambda: |-
