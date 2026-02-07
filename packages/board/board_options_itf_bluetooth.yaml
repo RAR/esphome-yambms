@@ -51,7 +51,7 @@
 esp32_ble:
   io_capability: none
   max_connections: 3
-  max_notifications: 10
+  max_notifications: 20  # 3 BMS × 5 characteristics = 15 needed
 
 esp32_ble_tracker:
   scan_parameters:
