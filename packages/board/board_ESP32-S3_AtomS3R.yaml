@@ -85,7 +85,7 @@ wifi:
   reboot_timeout: 0s
 
 logger:
-  baud_rate: 0 # frees the 3rd UART and avoids some bugs like "WK2168 with canbus" or "BLE client with RS485 modbus"
+  #baud_rate: 0 # frees the 3rd UART and avoids some bugs like "WK2168 with canbus" or "BLE client with RS485 modbus"
   hardware_uart: USB_SERIAL_JTAG
 
 # +--------------------------------------+

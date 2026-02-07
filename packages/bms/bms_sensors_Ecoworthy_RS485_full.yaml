@@ -290,14 +290,7 @@ sensor:
     ambient_temperature:
       device_id: bms_${bms_id}
       name: "ambient temperature"
-    min_temperature:
-      id: bms${bms_id}_min_temperature
-      device_id: bms_${bms_id}
-      name: "min temperature"
-    max_temperature:
-      id: bms${bms_id}_max_temperature
-      device_id: bms_${bms_id}
-      name: "max temperature"
+    # min_temperature and max_temperature are provided by bms_temperature_sensor_4.yaml
     avg_temperature:
       device_id: bms_${bms_id}
       name: "average temperature"

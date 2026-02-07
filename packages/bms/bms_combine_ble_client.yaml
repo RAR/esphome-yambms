@@ -67,6 +67,11 @@ globals:
     type: bool
     restore_value: no
     initial_value: "false"
+  # Timestamp (millis) of last BLE notification received, used by offline watchdog
+  - id: bms${bms_id}_ble_last_update
+    type: uint32_t
+    restore_value: no
+    initial_value: "0"
 
 # +========================================+
 # | BINARY SENSORS                         |
@@ -116,6 +121,10 @@ sensor:
     notify: true
     lambda: |-
       if (x.size() >= 6) {
+        // Track last successful data reception for offline watchdog
+        id(bms${bms_id}_ble_last_update) = millis();
+        id(bms${bms_id}_ble_connected) = true;
+        
         // Unpack and publish binary sensors
         id(bms${bms_id}_online_status).publish_state(x[0] > 0);
         id(bms${bms_id}_charging_allowed).publish_state(x[1] > 0);
@@ -563,3 +572,54 @@ sensor:
       - or:
         - throttle: 60s
         - delta: 0.001
+
+# +========================================+
+# | BLE OFFLINE WATCHDOG                   |
+# +========================================+
+# Mirrors modbus_controller on_offline behavior.
+# When BLE notifications stop arriving for 30s, mark BMS offline
+# and zero all sensors so it gets uncombined by bms_combine.yaml.
+
+interval:
+  - interval: 15s
+    then:
+      - lambda: |-
+          uint32_t last = id(bms${bms_id}_ble_last_update);
+          uint32_t now = millis();
+          uint32_t timeout_ms = 30000;  // 30 seconds without data = offline
+
+          // Only trigger if we were previously connected and data has stopped
+          if (id(bms${bms_id}_ble_connected) && last > 0 && (now - last) > timeout_ms) {
+            ESP_LOGW("ble_client", "BMS ${bms_id}: No BLE data for %u ms, marking offline", (now - last));
+            id(bms${bms_id}_ble_connected) = false;
+
+            // Publish offline status (mirrors modbus on_offline)
+            id(bms${bms_id}_online_status).publish_state(false);
+            id(bms${bms_id}_charging_allowed).publish_state(false);
+            id(bms${bms_id}_discharging_allowed).publish_state(false);
+            id(bms${bms_id}_bms_equalizing).publish_state(false);
+            id(bms${bms_id}_total_voltage).publish_state(0);
+            id(bms${bms_id}_current).publish_state(0);
+            id(bms${bms_id}_power).publish_state(0);
+            id(bms${bms_id}_battery_soc).publish_state(0);
+            id(bms${bms_id}_battery_capacity).publish_state(0);
+            id(bms${bms_id}_battery_capacity_remaining).publish_state(0);
+            id(bms${bms_id}_charging_cycles).publish_state(0);
+            id(bms${bms_id}_max_charge_current).publish_state(0);
+            id(bms${bms_id}_max_discharge_current).publish_state(0);
+            id(bms${bms_id}_max_cell_voltage).publish_state(0);
+            id(bms${bms_id}_max_voltage_cell).publish_state(0);
+            id(bms${bms_id}_min_cell_voltage).publish_state(0);
+            id(bms${bms_id}_min_voltage_cell).publish_state(0);
+            id(bms${bms_id}_min_temperature).publish_state(0);
+            id(bms${bms_id}_min_temperature_sensor).publish_state(0);
+            id(bms${bms_id}_max_temperature).publish_state(0);
+            id(bms${bms_id}_max_temperature_sensor).publish_state(0);
+            id(bms${bms_id}_cell_ovp).publish_state(0);
+            id(bms${bms_id}_cell_uvp).publish_state(0);
+            id(bms${bms_id}_bms_balance_trigger_voltage).publish_state(0);
+            id(bms${bms_id}_yambms_errors_bitmask).publish_state(0);
+            id(bms${bms_id}_charging_power).publish_state(0);
+            id(bms${bms_id}_discharging_power).publish_state(0);
+            id(bms${bms_id}_battery_soh).publish_state(0);
+          }
