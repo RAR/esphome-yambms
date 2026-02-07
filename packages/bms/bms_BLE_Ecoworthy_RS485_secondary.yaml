@@ -18,27 +18,27 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
 # +--------------------------------------+
-# | BLE Server for Ecoworthy SLAVE BMS   |
+# | BLE Server for Ecoworthy SECONDARY BMS   |
 # +--------------------------------------+
-# This package provides YamBMS sensors for a SLAVE battery and exposes
+# This package provides YamBMS sensors for a SECONDARY battery and exposes
 # them via BLE GATT server for remote clients.
 #
-# The master component must be configured with battery_count >= slave_battery_number
+# The primary component must be configured with battery_count >= secondary_battery_number
 #
 # Required substitutions:
-#   bms_id: The YamBMS BMS ID number for this slave
-#   bms_name: Display name for this slave BMS
+#   bms_id: The YamBMS BMS ID number for this secondary
+#   bms_name: Display name for this secondary BMS
 #   parent_ecoworthy_bms_id: ID of the parent ecoworthy_bms component (e.g., 'ecoworthy_bms9')
-#   slave_battery_number: The slave battery number (2, 3, 4, etc.)
+#   secondary_battery_number: The secondary battery number (2, 3, 4, etc.)
 
 substitutions:
-  bms_model: "Ecoworthy Slave"
+  bms_model: "Ecoworthy Secondary"
   bms_protocol: "Multi-node BLE"
-  # Slave batteries can't read config registers - provide defaults
+  # Secondary batteries can't read config registers - provide defaults
   bms_balance_trigger_voltage: '0.030'
   bms_cell_ovp: '3.650'
   bms_cell_uvp: '2.500'
 
 packages:
-  bms_sensors: !include bms_sensors_Ecoworthy_RS485_slave.yaml
+  bms_sensors: !include bms_sensors_Ecoworthy_RS485_secondary.yaml
   bms_ble_server: !include bms_ble_server.yaml
