@@ -28,7 +28,7 @@
 # The client unpacks data from byte arrays into individual sensors.
 #
 # MULTI-BMS SUPPORT:
-# Characteristic UUIDs embed bms_id to allow multiple BMSes per server.
+# Characteristic UUIDs embed bms_id_hex to allow multiple BMSes per server.
 # A single client BLE connection can access all BMSes on one server.
 # 
 # USAGE:
@@ -37,6 +37,7 @@
 #
 # Required substitutions:
 #   bms_id: The BMS ID number (must match server's bms_id)
+#   bms_id_hex: 2-char hex ID for UUIDs (must match server, e.g. '09', '0a')
 #   bms_name: The BMS name
 #   ble_client_id: ID of the BLE client (from board_options_itf_bluetooth.yaml)
 #   yambms_id: The YamBMS ID
@@ -117,7 +118,7 @@ sensor:
     internal: true
     type: characteristic
     service_uuid: ${ble_svc_status_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2601"
+    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b201"
     notify: true
     lambda: |-
       if (x.size() >= 6) {
@@ -163,7 +164,7 @@ sensor:
     internal: true
     type: characteristic
     service_uuid: ${ble_svc_battery_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2605"
+    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b205"
     notify: true
     lambda: |-
       if (!id(bms${bms_id}_online_status).state || x.size() < 36) return NAN;
@@ -333,7 +334,7 @@ sensor:
     internal: true
     type: characteristic
     service_uuid: ${ble_svc_cell_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b260e"
+    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b20e"
     notify: true
     lambda: |-
       if (!id(bms${bms_id}_online_status).state || x.size() < 8) return NAN;
@@ -410,7 +411,7 @@ sensor:
     internal: true
     type: characteristic
     service_uuid: ${ble_svc_temp_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2612"
+    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b212"
     notify: true
     lambda: |-
       if (!id(bms${bms_id}_online_status).state || x.size() < 8) return NAN;
@@ -491,7 +492,7 @@ sensor:
     internal: true
     type: characteristic
     service_uuid: ${ble_svc_limits_uuid}
-    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id}b2616"
+    characteristic_uuid: "beb5483e-36e1-4688-b7f5-ea0736${bms_id_hex}b216"
     notify: true
     lambda: |-
       if (!id(bms${bms_id}_online_status).state || x.size() < 10) return NAN;

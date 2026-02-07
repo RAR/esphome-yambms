@@ -41,6 +41,11 @@
 # Note: Slave batteries only have access to Pack Status data (not config blocks).
 #       balance_trigger_voltage must be set via substitution for slaves.
 
+substitutions:
+  bms_balance_trigger_voltage: '0.030'
+  bms_cell_ovp: '3.650'
+  bms_cell_uvp: '2.500'
+
 packages:
   bms_base: !include bms_base.yaml
   bms_temperature_sensor: !include bms_temperature_sensor_4.yaml
