@@ -45,6 +45,8 @@ substitutions:
   bms_balance_trigger_voltage: '0.030'
   bms_cell_ovp: '3.650'
   bms_cell_uvp: '2.500'
+  bms_max_charge_current: '100'
+  bms_max_discharge_current: '100'
 
 packages:
   bms_base: !include bms_base.yaml
@@ -274,16 +276,14 @@ sensor:
           device_id: bms_${bms_id}
           name: "charge voltage limit"
         charge_current_limit:
-          id: bms${bms_id}_max_charge_current
           device_id: bms_${bms_id}
-          name: "max charging current"
+          name: "dynamic max charging current"
         discharge_voltage_limit:
           device_id: bms_${bms_id}
           name: "discharge voltage limit"
         discharge_current_limit:
-          id: bms${bms_id}_max_discharge_current
           device_id: bms_${bms_id}
-          name: "max discharge current"
+          name: "dynamic max discharge current"
         fault_bitmask:
           id: bms${bms_id}_fault_bitmask
           device_id: bms_${bms_id}
@@ -350,6 +350,38 @@ sensor:
         - throttle: 10s
         - delta: 0.001
     lambda: return ${bms_cell_uvp};
+
+  # Max charge current (static, configurable via substitution)
+  - platform: template
+    id: bms${bms_id}_max_charge_current
+    device_id: bms_${bms_id}
+    name: "max charging current"
+    update_interval: ${bms_update_interval}
+    accuracy_decimals: 0
+    unit_of_measurement: "A"
+    state_class: measurement
+    device_class: 'current'
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 1
+    lambda: return ${bms_max_charge_current};
+
+  # Max discharge current (static, configurable via substitution)
+  - platform: template
+    id: bms${bms_id}_max_discharge_current
+    device_id: bms_${bms_id}
+    name: "max discharge current"
+    update_interval: ${bms_update_interval}
+    accuracy_decimals: 0
+    unit_of_measurement: "A"
+    state_class: measurement
+    device_class: 'current'
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 1
+    lambda: return ${bms_max_discharge_current};
 
   # Charging cycle capacity - Calculated from charging cycles and battery capacity
   - platform: template

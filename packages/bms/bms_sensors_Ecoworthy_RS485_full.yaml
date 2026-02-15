@@ -307,12 +307,19 @@ sensor:
       device_id: bms_${bms_id}
       name: "total pack max discharge current"
     # Individual battery limits from 0x45 (primary only, not aggregated)
-    # These are the per-battery limits used by YamBMS for combine logic
     individual_charge_current_limit:
+      device_id: bms_${bms_id}
+      name: "individual max charging current"
+    individual_discharge_current_limit:
+      device_id: bms_${bms_id}
+      name: "individual max discharge current"
+    # Configured (static) limits from BMS config - used by YamBMS combine logic
+    # These never go to 0 when the battery is full, unlike the dynamic limits
+    configured_ccl:
       id: bms${bms_id}_max_charge_current
       device_id: bms_${bms_id}
       name: "max charging current"
-    individual_discharge_current_limit:
+    configured_dcl:
       id: bms${bms_id}_max_discharge_current
       device_id: bms_${bms_id}
       name: "max discharge current"
