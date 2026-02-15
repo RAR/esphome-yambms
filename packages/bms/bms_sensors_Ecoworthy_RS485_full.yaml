@@ -51,7 +51,7 @@ packages:
 # +--------------------------------------+
 
 external_components:
-  - source: github://RAR/esphome-ecoworthy-bms@v0.2.1-beta
+  - source: github://RAR/esphome-ecoworthy-bms@v1.0.0
     refresh: 0s
 
 ecoworthy_bms:
