@@ -627,6 +627,3 @@ button:
     trip:
       device_id: bms_${bms_id}
       name: "trip breaker"
-    trip_all:
-      device_id: bms_${bms_id}
-      name: "trip all breakers"
