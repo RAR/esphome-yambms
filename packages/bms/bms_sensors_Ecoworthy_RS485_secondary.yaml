@@ -1,4 +1,4 @@
-# Updated : 2026.02.05
+# Updated : 2026.02.15
 # Version : 1.1.1
 # GitHub  : https://github.com/RAR/esphome-ecoworthy-bms
 
@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
-# +--------------------------------------+
-# | Ecoworthy BMS RS485 SECONDARY Package    |
-# +--------------------------------------+
+# +---------------------------------------+
+# | Ecoworthy BMS RS485 SECONDARY Package |
+# +---------------------------------------+
 # This package provides YamBMS sensors for a SECONDARY battery polled
 # through a primary Ecoworthy BMS component.
 #
