@@ -1,5 +1,5 @@
-# Updated : 2026.01.31
-# Version : 1.1.7
+# Updated : 2026.02.15
+# Version : 1.1.8
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -20,8 +20,8 @@
 substitutions:
   board_chip: "ESP32"
   board_name: "espBerry 2-CH-CAN"
-  # Requirement: RGB flag to show functionality is available
-  board_has_rgb: "false"
+  # LED
+  board_has_rgb: "false" # LED `RGB` flag to show functionality is available
 
 packages:
   device_base: !include ../base/device_base.yaml
@@ -29,7 +29,7 @@ packages:
   led_control: !include board_options_led_control.yaml
 
 esp32:
-  board: esp32dev
+  variant: esp32
   cpu_frequency: 240MHz
   framework:
     type: esp-idf
