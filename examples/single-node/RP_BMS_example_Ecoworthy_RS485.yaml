@@ -1,4 +1,4 @@
-# Updated : 2026.02.05
+# Updated : 2026.02.15
 # Version : 1.1.1
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -39,7 +39,7 @@
 #
 # Set bms_battery_count on the primary to the total number of batteries.
 
-##############################################################################
+################################################################################
 
       # Ecoworthy Modbus - Include this ONCE per RS485 bus
       - path: 'packages/bms/bms_combine_Ecoworthy_RS485_modbus.yaml'
@@ -74,13 +74,15 @@
           bms_cell_max_cycles: '6000.0'
           bms_status_led_id: 'esp_light'
 
-##############################################################################
+################################################################################
+
 # Example B : Multiple independent primaries (each BMS has its own address)
 #
 # Use this when each Ecoworthy BMS is independently addressed on the bus
 # and you don't need the primary/secondary polling pattern.
 # Protection thresholds (cell OVP/UVP) are read from BMS config registers.
-##############################################################################
+
+################################################################################
 
 #      # Ecoworthy Modbus - Include this ONCE per RS485 bus
 #      - path: 'packages/bms/bms_combine_Ecoworthy_RS485_modbus.yaml'
