@@ -1,5 +1,5 @@
-# Updated : 2026.02.02
-# Version : 1.0.0
+# Updated : 2026.02.15
+# Version : 1.0.1
 # GitHub  : https://github.com/RAR/esphome-ecoworthy-bms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -34,7 +34,6 @@
 substitutions:
   bms_model: "Ecoworthy"
   bms_protocol: "RS485"
-  ecoworthy_modbus_id: modbus_ecoworthy
 
 packages:
   bms_combine: !include bms_combine.yaml
