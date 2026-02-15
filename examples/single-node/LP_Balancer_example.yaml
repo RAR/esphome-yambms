@@ -1,5 +1,5 @@
 # Updated : 2026.02.15
-# Version : 1.1.3
+# Version : 1.1.1
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -26,37 +26,42 @@
 
 packages:
 
-  # Deye BMS top unit (required)
-  bms_top: !include
-    file: packages/bms/bms_sensors_DEYE_CAN_top_full.yaml
+  # Basen controller
+  controller: !include
+    file: packages/bms/bms_combine_BASEN_RS485_controller.yaml
     vars:
-      # CAN BUS ID
-      canbus_id: 'canbus_bms_1'
-      deye_name: 'DEYE-Top 1'
-      deye_id: '1'
+      basen_uart_id: 'uart_esp_1'
+      basen_uart_baud_rate: '9600'
+      basen_controller_id: "basen_controller_1"
 
-  # Deye module 1
+  # Basen module 1
   bms1: !include
-    file: packages/bms/bms_combine_DEYE_CAN_module_full.yaml
+    file: packages/bms/bms_combine_BASEN_RS485_full.yaml
     vars:
-      # CAN BUS ID
-      canbus_id: 'canbus_bms_1'
-      # BMS vars
       bms_id: '1' # must be a number
-      bms_name: 'DEYE-BMS 1'
-      deye_id: '1'
-      deye_module_id: '0' # Modules are numbered with 0-9
-      bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+      bms_name: 'BASEN-BMS 1'
+      bms_address: '0x01'
 
-  # Deye module 2
+  # Basen module 2
   bms2: !include
-    file: packages/bms/bms_combine_DEYE_CAN_module_full.yaml
+    file: packages/bms/bms_combine_BASEN_RS485_full.yaml
     vars:
-      # CAN BUS ID
-      canbus_id: 'canbus_bms_1'
-      # BMS vars
-      deye_id: '1'
       bms_id: '2' # must be a number
-      bms_name: 'DEYE-BMS 2'
-      deye_module_id: '1' # Modules are numbered with 0-9
-      bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+      bms_name: 'BASEN-BMS 2'
+      bms_address: '0x02'
+
+  # Balancer 1 linked to BMS 1
+  balancer1: !include
+    file: packages/balancer/balancer_sensors_JK_NEEY_BLE.yaml
+    vars:
+      bms_id: '1' # must match the BMS ID
+      balancer_name: 'Balancer 1'
+      balancer_ble_mac_address: 11:22:33:44:55:66
+  
+  # Balancer 2 linked to BMS 2
+  balancer2: !include
+    file: packages/balancer/balancer_sensors_JK_NEEY_BLE.yaml
+    vars:
+      bms_id: '2' # must match the BMS ID
+      balancer_name: 'Balancer 2'
+      balancer_ble_mac_address: 11:22:33:44:55:67

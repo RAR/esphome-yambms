@@ -1,5 +1,5 @@
-# Updated : 2026.02.03
-# Version : 1.1.4
+# Updated : 2026.02.15
+# Version : 1.1.5
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -19,20 +19,18 @@
 
 ############################ Remote Packages Example ###########################
 
-# This is not a working YAML but just code ready to copy into your main YAML.
+# This is not a working YAML but just code ready to copy into
+# your main YAML below the `packages:` section.
+
+# packages:
+#   remote_packages:
+#     url: https://github.com/Sleeper85/esphome-yambms
+#     ref: main
+#     refresh: 60s
+#     files:
 
 ################################################################################
 
-packages:
-
-  # The sniffer represents the ESP node connected to the JK-BMS PB RS485 bus
-  # If address 0x00 is not detected on the RS485 bus, the sniffer will act directly as a master BMS (mode 2, max 15 BMS)
-
-  bms:
-    url: https://github.com/Sleeper85/esphome-yambms
-    ref: main
-    refresh: 0s
-    files:
       # RS485 Sniffer with talk_pin (WS-RS485-CAN and other RS485 boards with a flow_control_pin)
       # - path: 'packages/bms/bms_combine_JK_RS485_Modbus_sniffer_talk_pin.yaml'
       #   vars:

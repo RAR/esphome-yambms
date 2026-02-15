@@ -24,6 +24,8 @@
 
 ################################################################################
 
+packages:
+
   shunt1: !include
     file: packages/shunt/shunt_combine_FAKE.yaml
     vars:

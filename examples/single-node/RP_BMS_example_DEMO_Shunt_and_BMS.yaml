@@ -22,6 +22,13 @@
 # This is not a working YAML but just code ready to copy into
 # your main YAML below the `packages:` section.
 
+# packages:
+#   remote_packages:
+#     url: https://github.com/Sleeper85/esphome-yambms
+#     ref: main
+#     refresh: 60s
+#     files:
+
 ################################################################################
 
       # Shunt 1

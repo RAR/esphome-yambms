@@ -1,5 +1,5 @@
-# Updated : 2026.02.03
-# Version : 1.1.3
+# Updated : 2026.02.15
+# Version : 1.1.4
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -17,18 +17,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
-############################ Local Packages Example ############################
+############################ Remote Packages Example ###########################
 
-# This is not a working YAML but just code ready to copy into your main YAML.
+# This is not a working YAML but just code ready to copy into
+# your main YAML below the `packages:` section.
+
+# packages:
+#   remote_packages:
+#     url: https://github.com/Sleeper85/esphome-yambms
+#     ref: main
+#     refresh: 60s
+#     files:
 
 ################################################################################
 
   # Junctek KHF UART
-  shunt:
-    url: https://github.com/Sleeper85/esphome-yambms
-    ref: main
-    refresh: 0s
-    files:
       # Shunt 1
       - path: 'packages/shunt/shunt_combine_Junctek_KHF_UART.yaml'
         vars:
@@ -42,11 +45,6 @@
           bms_ids: '{1, 2}'
 
   # Victron SmartShunt UART
-  shunt:
-    url: https://github.com/Sleeper85/esphome-yambms
-    ref: main
-    refresh: 0s
-    files:
       # Shunt 1
       - path: 'packages/shunt/shunt_combine_Victron_SmartShunt_UART.yaml'
         vars:
@@ -60,11 +58,6 @@
           bms_ids: '{1, 2}'
 
   # Victron SmartShunt BLE
-  shunt:
-    url: https://github.com/Sleeper85/esphome-yambms
-    ref: main
-    refresh: 0s
-    files:
       # Shunt 1
       - path: 'packages/shunt/shunt_combine_Victron_SmartShunt_BLE.yaml'
         vars:
