@@ -17,13 +17,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
-############################ Local Packages Example ############################
+############################ Remote Packages Example ###########################
 
-# This is not a working YAML but just code ready to copy into your main YAML.
+# This is not a working YAML but just code ready to copy into
+# your main YAML below the `packages:` section.
+
+# packages:
+#   remote_packages:
+#     url: https://github.com/Sleeper85/esphome-yambms
+#     ref: main
+#     refresh: 60s
+#     files:
 
 ################################################################################
 
-##############################################################################
 # Example A : Primary + secondary batteries (one BMS polls multiple batteries)
 #
 # The primary BMS component reads data for all batteries on the RS485 bus.
@@ -31,15 +38,9 @@
 # bms_combine_Ecoworthy_RS485_secondary.yaml.
 #
 # Set bms_battery_count on the primary to the total number of batteries.
+
 ##############################################################################
 
-packages:
-
-  bms:
-    url: https://github.com/Sleeper85/esphome-yambms
-    ref: main
-    refresh: 60min
-    files:
       # Ecoworthy Modbus - Include this ONCE per RS485 bus
       - path: 'packages/bms/bms_combine_Ecoworthy_RS485_modbus.yaml'
         vars:
@@ -81,13 +82,6 @@ packages:
 # Protection thresholds (cell OVP/UVP) are read from BMS config registers.
 ##############################################################################
 
-#packages:
-#
-#  bms:
-#    url: https://github.com/Sleeper85/esphome-yambms
-#    ref: main
-#    refresh: 60min
-#    files:
 #      # Ecoworthy Modbus - Include this ONCE per RS485 bus
 #      - path: 'packages/bms/bms_combine_Ecoworthy_RS485_modbus.yaml'
 #        vars:
