@@ -1,5 +1,5 @@
-# Updated : 2026.02.03
-# Version : 1.1.3
+# Updated : 2026.02.15
+# Version : 1.1.4
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -19,11 +19,10 @@
 
 ############################ Local Packages Example ############################
 
-# This is not a working YAML but just code ready to copy into your main YAML.
+# This is not a working YAML but just code ready to copy into
+# your main YAML below the `packages:` section.
 
 ################################################################################
-
-packages:
 
   shunt1: !include
     file: packages/shunt/shunt_combine_FAKE.yaml
@@ -38,22 +37,17 @@ packages:
       shunt_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
 
   bms1: !include
-    file: packages/bms/bms_combine_FAKE.yaml
+    file: packages/bms/bms_combine_DEMO.yaml
     vars:
       bms_id: '1' # must be a number
       bms_name: 'BMS 1'
       # BMS sensors values
       bms_battery_capacity: '280' # Ah
-      bms_battery_capacity_remaining: '243' # Ah
-      bms_voltage: '53.45' # V
       bms_current: '9.2' # A
-      bms_power: '492' # W
       bms_soc: '87' # %
       bms_soh: '98' # %
       bms_min_cell_voltage: '3.339' # V
-      bms_min_voltage_cell: '2' # cell number 1~16
       bms_max_cell_voltage: '3.341' # V
-      bms_max_voltage_cell: '11' # cell number 1~16
       bms_min_temperature: '9.1' # °C
       bms_max_temperature: '9.3' # °C
       bms_max_charge_current: '100' # A
@@ -65,22 +59,17 @@ packages:
       bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
 
   bms2: !include
-    file: packages/bms/bms_combine_FAKE.yaml
+    file: packages/bms/bms_combine_DEMO.yaml
     vars:
       bms_id: '2' # must be a number
       bms_name: 'BMS 2'
       # BMS sensors values
       bms_battery_capacity: '280' # Ah
-      bms_battery_capacity_remaining: '238' # Ah
-      bms_voltage: '53.41' # V
       bms_current: '11.3' # A
-      bms_power: '604' # W
       bms_soc: '85' # %
       bms_soh: '89' # %
       bms_min_cell_voltage: '3.337' # V
-      bms_min_voltage_cell: '14' # cell number 1~16
       bms_max_cell_voltage: '3.339' # V
-      bms_max_voltage_cell: '3' # cell number 1~16
       bms_min_temperature: '15.1' # °C
       bms_max_temperature: '15.3' # °C
       bms_max_charge_current: '100' # A
@@ -92,22 +81,17 @@ packages:
       bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
 
   bms3: !include
-    file: packages/bms/bms_combine_FAKE.yaml
+    file: packages/bms/bms_combine_DEMO.yaml
     vars:
       bms_id: '3' # must be a number
       bms_name: 'BMS 3'
       # BMS sensors values
       bms_battery_capacity: '280' # Ah
-      bms_battery_capacity_remaining: '232' # Ah
-      bms_voltage: '53.37' # V
       bms_current: '15.7' # A
-      bms_power: '838' # W
       bms_soc: '83' # %
       bms_soh: '79' # %
       bms_min_cell_voltage: '3.334' # V
-      bms_min_voltage_cell: '7' # cell number 1~16
       bms_max_cell_voltage: '3.336' # V
-      bms_max_voltage_cell: '9' # cell number 1~16
       bms_min_temperature: '20.1' # °C
       bms_max_temperature: '20.3' # °C
       bms_max_charge_current: '100' # A
