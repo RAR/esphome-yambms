@@ -14,6 +14,7 @@
 * `PACE` BMS (RS485)
 * `BASEN` BMS (RS485)
 * `DEYE` BMS (CAN)
+* `Ecoworthy` BMS (RS485)
 
 **Note: other BMS brands already integrated with ESPhome can be added easily.**
 
