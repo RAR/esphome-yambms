@@ -1,4 +1,4 @@
-# Updated : 2026.02.15
+# Updated : 2026.02.16
 # Version : 1.1.1
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -43,14 +43,14 @@
           bms_id: '1' # must be a number
           bms_name: 'BASEN-BMS 1'
           bms_address: '0x01'
-          bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+          bms_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
       # Basen module 2
       - path: 'packages/bms/bms_combine_BASEN_RS485_full.yaml'
         vars:
           bms_id: '2' # must be a number
           bms_name: 'BASEN-BMS 2'
           bms_address: '0x02'
-          bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+          bms_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
       
       # Balancer 1 linked to BMS 1
       - path: 'packages/balancer/balancer_sensors_JK_NEEY_BLE.yaml'
@@ -58,7 +58,7 @@
           bms_id: '1' # must match the BMS ID
           balancer_name: 'Balancer 1'
           balancer_ble_mac_address: 11:22:33:44:55:66
-          balancer_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+          balancer_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
       # Balancer 2 linked to BMS 2
       - path: 'packages/balancer/balancer_sensors_JK_NEEY_BLE.yaml'
         vars:

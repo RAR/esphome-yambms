@@ -1,4 +1,4 @@
-# Updated : 2026.02.15
+# Updated : 2026.02.16
 # Version : 1.1.4
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -62,7 +62,7 @@
           bms_cell_uvp: '2.800' # V                            Used by 'Auto DCL' functions and to calculate maximum discharge voltage
           bms_balance_trigger_voltage: '0.010' # V             Used by 'Auto CVL' functions
           bms_charging_cycles: '178' # charging cycles number  Used to calculate the SoH
-          bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+          bms_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
 
       # BMS 2
       - path: 'packages/bms/bms_combine_DEMO.yaml'
@@ -84,7 +84,7 @@
           bms_cell_uvp: '2.800' # V                            Used by 'Auto DCL' functions and to calculate maximum discharge voltage
           bms_balance_trigger_voltage: '0.010' # V             Used by 'Auto CVL' functions
           bms_charging_cycles: '226' # charging cycles number  Used to calculate the SoH
-          bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+          bms_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
 
       # BMS 3
       - path: 'packages/bms/bms_combine_DEMO.yaml'
@@ -106,4 +106,4 @@
           bms_cell_uvp: '2.800' # V                            Used by 'Auto DCL' functions and to calculate maximum discharge voltage
           bms_balance_trigger_voltage: '0.010' # V             Used by 'Auto CVL' functions
           bms_charging_cycles: '194' # charging cycles number  Used to calculate the SoH
-          bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+          bms_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable

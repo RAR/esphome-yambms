@@ -1,4 +1,4 @@
-# Updated : 2026.02.05
+# Updated : 2026.02.16
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -172,6 +172,7 @@ packages:
     # file: 'packages/board/board_ESP32-C3_DevKitM-1.yaml'
     # file: 'packages/board/board_ESP32-C3_ETH01-EVO.yaml'
     # file: 'packages/board/board_ESP32-C3_FlipC3.yaml'
+    # file: 'packages/board/board_ESP32-S3_Generic.yaml'
     # file: 'packages/board/board_ESP32-S3_AtomS3-Lite.yaml'
     # file: 'packages/board/board_ESP32-S3_AtomS3.yaml'
     # file: 'packages/board/board_ESP32-S3_AtomS3R.yaml'
@@ -284,10 +285,11 @@ packages:
       canbus_id: '1' # Must be a number
       canbus_name: 'CANBUS 1'
       canbus_node_id: 'canbus_inverter_1' # CAN bus node to which your inverter is connected
-      canbus_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
-      # The CANBUS link will be considered down if no response from the inverter (ID 0x305) for 5s
-      # The Deye inverter sends the ACK (can_id 0x305) only when it receives the can_id 0x356
+      canbus_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
+      # The CAN bus link will be paused for `30s` if the inverter does not respond with an ACK (can_id 0x305)
+      # before the end of the `canbus_link_timer` (5s by default).
       canbus_link_timer: '5s'
+      canbus_extended_ack: 'false' # Set to 'true' for enable extended 29-bit IDs for the ACK can_id 0x305 (required for Schneider XW Pro)
 
 
 
@@ -303,7 +305,7 @@ packages:
   #     rs485_uart_id: 'uart_esp_3' # UART interface to which your inverter is connected
   #     rs485_uart_baud_rate: '9600'
   #     rs485_update_timeout: '5s'
-  #     rs485_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+  #     rs485_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
 
 
 

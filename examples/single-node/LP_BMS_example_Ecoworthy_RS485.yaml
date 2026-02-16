@@ -1,4 +1,4 @@
-# Updated : 2026.02.15
+# Updated : 2026.02.16
 # Version : 1.1.1
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -52,7 +52,7 @@ packages:
       bms_address: '0x01' # BMS 1 modbus address (usually 0x01 for primary)
       bms_battery_count: '3' # total batteries polled (1=primary only, 2+=primary+secondaries)
       bms_cell_max_cycles: '6000.0'
-      bms_status_led_id: 'esp_light' # led used to show status. Default = esp_light, comment out to disable
+      bms_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
 
   # Secondary battery 2 (BMS 2) - data polled by primary
   bms2: !include
