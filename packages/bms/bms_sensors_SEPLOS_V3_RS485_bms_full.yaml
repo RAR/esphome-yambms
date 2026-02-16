@@ -1,5 +1,5 @@
-# Updated : 2026.02.13
-# Version : 1.1.6
+# Updated : 2026.02.16
+# Version : 1.1.7
 # GitHub  : https://github.com/syssi/esphome-seplos-bms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -193,18 +193,18 @@ sensor:
       - throttle: ${bms_update_interval}
   - platform: seplos_parser
     seplos_parser_id: ${seplos_parser_id}
-    id: bms${bms_id}_max_discharge_current
+    # id: bms${bms_id}_max_discharge_current
     device_id: bms_${bms_id}
-    name: ${bms_prefix} maxdiscurt
+    name: ${bms_prefix} maxdiscurt # SEPLOS requested DCL
     unit_of_measurement: A
     accuracy_decimals: 2
     filters:
       - throttle: ${bms_update_interval}
   - platform: seplos_parser
     seplos_parser_id: ${seplos_parser_id}
-    id: bms${bms_id}_max_charge_current
+    # id: bms${bms_id}_max_charge_current
     device_id: bms_${bms_id}
-    name: ${bms_prefix} maxchgcurt
+    name: ${bms_prefix} maxchgcurt # SEPLOS requested CCL
     unit_of_measurement: A
     accuracy_decimals: 2
     filters:
@@ -455,19 +455,6 @@ sensor:
         - delta: 1
     lambda: return id(bms${bms_id}_charging_cycles_raw).state * id(bms${bms_id}_battery_capacity).state;
   
-  # errors_bitmask (internal)
-  - platform: template
-    id: bms${bms_id}_yambms_errors_bitmask
-    device_id: bms_${bms_id}
-    update_interval: ${bms_update_interval}
-    accuracy_decimals: 0
-    icon: mdi:alert-circle-outline
-    filters:
-      - or:
-        - throttle: 10s
-        - delta: 1
-    lambda: return 0;
-
   # min_voltage_cell (internal)
   - platform: template
     id: bms${bms_id}_min_voltage_cell
@@ -493,6 +480,36 @@ sensor:
         - throttle: 10s
         - delta: 1
     lambda: return 2;
+
+  # max_charge_current
+  - platform: template
+    id: bms${bms_id}_max_charge_current
+    device_id: bms_${bms_id}
+    name: "max charge current"
+    update_interval: ${bms_update_interval}
+    accuracy_decimals: 0
+    unit_of_measurement: A
+    icon: mdi:current-dc
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 1
+    lambda: return ${bms_max_charge_current};
+
+  # max_discharge_current
+  - platform: template
+    id: bms${bms_id}_max_discharge_current
+    device_id: bms_${bms_id}
+    name: "max discharge current"
+    update_interval: ${bms_update_interval}
+    accuracy_decimals: 0
+    unit_of_measurement: A
+    icon: mdi:current-dc
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 1
+    lambda: return ${bms_max_discharge_current};
 
   # cell_ovp
   - platform: template
@@ -539,6 +556,19 @@ sensor:
         - throttle: 10s
         - delta: 0.001
     lambda: return ${bms_balance_trigger_voltage};
+
+  # errors_bitmask (internal)
+  - platform: template
+    id: bms${bms_id}_yambms_errors_bitmask
+    device_id: bms_${bms_id}
+    update_interval: ${bms_update_interval}
+    accuracy_decimals: 0
+    icon: mdi:alert-circle-outline
+    filters:
+      - or:
+        - throttle: 10s
+        - delta: 1
+    lambda: return 0;
 
 text_sensor:
   - platform: seplos_parser
