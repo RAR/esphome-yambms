@@ -1,5 +1,5 @@
-# Updated : 2026.02.06
-# Version : 2.5.2
+# Updated : 2026.02.16
+# Version : 2.5.3
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -18,8 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
 substitutions:
-  # The ID of the LED on your board used for this component
-  canbus_status_led_id: "virtual_status_light"
+  canbus_status_led_id: "virtual_status_light" # The ID of the LED on your board used for this component
+  canbus_extended_ack: 'false' # Set to 'true' for enable extended 29-bit IDs for the ACK can_id 0x305 (required for Schneider XW Pro)
 
 esphome:
   on_boot:
@@ -165,6 +165,7 @@ canbus:
   - id: !extend ${canbus_node_id}
     on_frame:
       - can_id: 0x305
+        use_extended_id: ${canbus_extended_ack}
         then:
           - lambda: |-
               id(canbus${canbus_id}_script_canbus_link_timer).execute();           // Restart CANBUS link timer

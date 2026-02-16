@@ -185,6 +185,8 @@ Sending CAN frames continues without an inverter connected is problematic and wi
 
 For this reason, if the inverter does not respond after `5s`, the link is paused for `30s` before attempting to re-establish the communication.
 
+The Deye inverter sends the ACK (can_id `0x305`) only when it receives the can_id `0x356`.
+
 ```YAML
 - path: 'packages/yambms/yambms_canbus.yaml' # yambms_canbus_web_server.yaml
   vars:
@@ -192,8 +194,10 @@ For this reason, if the inverter does not respond after `5s`, the link is paused
     canbus_name: 'CANBUS 1'
     canbus_node_id: 'canbus_inverter_1' # CAN bus node to which your inverter is connected
     canbus_status_led_id: 'esp_light' # LED used to show status; default = esp_light, comment out to disable
-    # The CAN bus link will be considered down if no response from the inverter (ID 0x305) for 5s
+    # The CAN bus link will be paused for `30s` if the inverter does not respond with an ACK (can_id 0x305)
+    # before the end of the `canbus_link_timer` (5s by default).
     canbus_link_timer: '5s'
+    canbus_extended_ack: 'false' # Set to 'true' for enable extended 29-bit IDs for the ACK can_id 0x305 (required for Schneider XW Pro)
 ```
 
 ## Warning & Alarms
