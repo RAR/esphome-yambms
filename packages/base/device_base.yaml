@@ -1,5 +1,5 @@
-# Updated : 2026.02.05
-# Version : 1.2.5
+# Updated : 2026.02.18
+# Version : 1.2.6
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -75,6 +75,7 @@ binary_sensor:
     name: Inverter communication status
     id: inverter_com_status
     entity_category: diagnostic
+    trigger_on_initial_state: true
 
 sensor:
   # https://esphome.io/components/sensor/uptime

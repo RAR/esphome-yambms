@@ -1,4 +1,4 @@
-# Updated : 2026.02.12
+# Updated : 2026.02.18
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -1102,6 +1102,7 @@ binary_sensor:
     name: "${name} ${yambms_name} Discharging Instruction"
     id: ${yambms_id}_discharging_instruction
     icon: mdi:battery-minus
+    trigger_on_initial_state: true
   # +--------------------------------------+
   # | Requested Force Charge               |
   # +--------------------------------------+

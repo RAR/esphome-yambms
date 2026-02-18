@@ -1,0 +1,1530 @@
+# Updated : 2026.02.18
+# Version : 1.1.1
+# GitHub  : https://github.com/Sleeper85/esphome-yambms
+
+# YamBMS ( Yet another multi-BMS Merging Solution )
+
+# This YAML is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
+
+# Board  : ESP32-S3 WS Touch LCD 7" and 4.3" (800x480)
+# Pages  : Page 1 = Battery | Page 2 = Status
+
+# +---------------------------------------------------------+
+# | Fonts                                                   |
+# +---------------------------------------------------------+
+font:
+  - file: "gfonts://Montserrat"
+    id: font_14
+    size: 14
+    bpp: 4
+  - file: "gfonts://Montserrat"
+    id: font_18
+    size: 18
+    bpp: 4
+    glyphs: "!\"%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ °↑↓"
+  - file: "gfonts://Montserrat"
+    id: font_22
+    size: 22
+    bpp: 4
+  - file: "gfonts://Montserrat"
+    id: font_28
+    size: 28
+    bpp: 4
+  - file: "gfonts://Montserrat"
+    id: font_40
+    size: 40
+    bpp: 4
+
+# +---------------------------------------------------------+
+# | Display Timeout                                         |
+# +---------------------------------------------------------+
+number:
+  - platform: template
+    id: display_timeout
+    device_id: ${board_id}
+    name: "Display timeout"
+    optimistic: true
+    unit_of_measurement: "s"
+    initial_value: 300
+    restore_value: true
+    min_value: 5
+    max_value: 300
+    step: 5
+    mode: box
+    entity_category: config
+
+# +---------------------------------------------------------+
+# | Touch Screen actions                                    |
+# +---------------------------------------------------------+
+
+touchscreen:
+  - platform: gt911
+    id: !extend my_touchscreen
+    on_release: # when the finger leaves the screen surface
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - light.turn_on: backlight
+
+# +---------------------------------------------------------+
+# | LVGL Configuration                                      |
+# +---------------------------------------------------------+
+# | Color definitions (LVGL hex)                            |
+# +---------------------------------------------------------+
+# BG         : 0x1a1a2e  (dark navy)
+# PANEL      : 0x16213e  (slightly lighter navy)
+# ACCENT     : 0x0f3460  (blue)
+# GREEN      : 0x00b894
+# YELLOW     : 0xfdcb6e
+# RED        : 0xe17055
+# TEXT_WHITE : 0xffffff
+# TEXT_GRAY  : 0xb2bec3
+
+lvgl:
+  displays:
+    - my_display
+  touchscreens:
+    - my_touchscreen
+
+  on_idle:
+    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    then:
+      - light.turn_off: backlight
+      - lvgl.pause:
+
+  # Global style defaults
+  theme:
+    label:
+      text_color: 0xffffff
+    obj:
+      pad_all: 0
+      scrollbar_mode: "off"
+
+  # ┌─────────────────────────────────────────────────────┐
+  # │ PAGE 1 — BATTERY                                    │
+  # └─────────────────────────────────────────────────────┘
+  pages:
+    - id: page_battery
+      bg_color: 0x1a1a2e
+      widgets:
+
+        # ── NAV BUTTONS (bottom-right, always visible) ───
+        - button:
+            id: btn_p1
+            x: 680
+            y: 440
+            width: 50
+            height: 32
+            bg_color: 0x0f3460
+            border_width: 2
+            border_color: 0x00b894
+            radius: 6
+            widgets:
+              - label:
+                  text: "P1"
+                  text_font: font_14
+                  text_color: 0x00b894
+                  align: CENTER
+            on_click:
+              - lvgl.page.show: page_battery
+
+        - button:
+            id: btn_p2
+            x: 740
+            y: 440
+            width: 50
+            height: 32
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0xb2bec3
+            radius: 6
+            widgets:
+              - label:
+                  text: "P2"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  align: CENTER
+            on_click:
+              - lvgl.page.show: page_status
+
+        # ── SOC BAR ───────────────────────────────────────
+        # Container
+        - obj:
+            x: 20
+            y: 8
+            width: 760
+            height: 106
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 8
+            pad_all: 0
+            widgets:
+              - label:
+                  x: 0
+                  y: 8
+                  width: 758
+                  text: "BATTERY SOC"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - bar:
+                  id: bar_soc
+                  x: 12
+                  y: 34
+                  width: 608
+                  height: 48
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  indicator:
+                    bg_color: 0xfdcb6e
+                  bg_color: 0x0f3460
+                  radius: 4
+              - label:
+                  id: lbl_soc_value
+                  x: 621
+                  y: 34
+                  width: 125
+                  height: 48
+                  text: "--.- %"
+                  text_font: font_40
+                  text_color: 0xfdcb6e
+                  text_align: RIGHT
+
+        # ── ROW 1 : Voltage | Current | Power ─────────────
+        # Voltage panel
+        - obj:
+            x: 20
+            y: 126
+            width: 240
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 8
+            widgets:
+              - label:
+                  x: 0
+                  y: 8
+                  width: 238
+                  text: "VOLTAGE"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_voltage
+                  x: 0
+                  y: 34
+                  width: 238
+                  text: "--.- V"
+                  text_font: font_40
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # Current panel
+        - obj:
+            x: 280
+            y: 126
+            width: 240
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 8
+            widgets:
+              - label:
+                  x: 0
+                  y: 8
+                  width: 238
+                  text: "CURRENT"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_current
+                  x: 0
+                  y: 34
+                  width: 238
+                  text: "--.- A"
+                  text_font: font_40
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # Power panel
+        - obj:
+            x: 540
+            y: 126
+            width: 240
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 8
+            widgets:
+              - label:
+                  x: 0
+                  y: 8
+                  width: 238
+                  text: "POWER"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_power
+                  x: 0
+                  y: 34
+                  width: 238
+                  text: "---- W"
+                  text_font: font_40
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # ── ROW 2 : Capacity info (4 tiles) ───────────────
+        # Installed Capacity
+        - obj:
+            x: 20
+            y: 243
+            width: 178
+            height: 70
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Installed Cap."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_installed_cap
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---- Ah"
+                  text_font: font_18
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # Battery Capacity
+        - obj:
+            x: 208
+            y: 243
+            width: 178
+            height: 70
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Battery Cap."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_battery_cap
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---- Ah"
+                  text_font: font_18
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # Capacity Remaining
+        - obj:
+            x: 396
+            y: 243
+            width: 178
+            height: 70
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Cap. Remaining"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_cap_remaining
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---- Ah"
+                  text_font: font_18
+                  text_color: 0x00b894
+                  text_align: CENTER
+
+        # SoH
+        - obj:
+            x: 584
+            y: 243
+            width: 196
+            height: 70
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 194
+                  text: "Battery SoH"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_soh
+                  x: 0
+                  y: 28
+                  width: 194
+                  text: "--.- %"
+                  text_font: font_18
+                  text_color: 0x00b894
+                  text_align: CENTER
+
+        # ── ROW 3 : Cell voltages + Delta + Temperatures ──
+        # Max Cell V.
+        - obj:
+            x: 20
+            y: 325
+            width: 178
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Max Cell V."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_max_cell_v
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "-.--- V"
+                  text_font: font_18
+                  text_color: 0xfdcb6e
+                  text_align: CENTER
+              - label:
+                  id: lbl_max_cell_num
+                  x: 0
+                  y: 54
+                  width: 176
+                  text: "Cell ---"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+
+        # Min Cell V.
+        - obj:
+            x: 208
+            y: 325
+            width: 178
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Min Cell V."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_min_cell_v
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "-.--- V"
+                  text_font: font_18
+                  text_color: 0xfdcb6e
+                  text_align: CENTER
+              - label:
+                  id: lbl_min_cell_num
+                  x: 0
+                  y: 54
+                  width: 176
+                  text: "Cell ---"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+
+        # Delta Cell V. + Equalizing
+        - obj:
+            x: 396
+            y: 325
+            width: 178
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Delta Cell V."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_delta_cell
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "-.--- V"
+                  text_font: font_18
+                  text_color: 0xffffff
+                  text_align: CENTER
+              - label:
+                  id: lbl_equalizing
+                  x: 0
+                  y: 54
+                  width: 176
+                  text: "Equalizing: --"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+
+        # Max/Min Temperature
+        - obj:
+            x: 584
+            y: 325
+            width: 196
+            height: 105
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 194
+                  text: "Temperature"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_max_temp
+                  x: 0
+                  y: 28
+                  width: 97
+                  text: "↑ ---°C"
+                  text_font: font_18
+                  text_color: 0xe17055
+                  text_align: CENTER
+              - label:
+                  id: lbl_min_temp
+                  x: 97
+                  y: 28
+                  width: 97
+                  text: "↓ ---°C"
+                  text_font: font_18
+                  text_color: 0x74b9ff
+                  text_align: CENTER
+              - label:
+                  id: lbl_max_temp_sensor
+                  x: 0
+                  y: 54
+                  width: 97
+                  text: "Sensor ---"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_min_temp_sensor
+                  x: 97
+                  y: 54
+                  width: 97
+                  text: "Sensor ---"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+
+    # ┌─────────────────────────────────────────────────────┐
+    # │ PAGE 2 — STATUS                                     │
+    # └─────────────────────────────────────────────────────┘
+    - id: page_status
+      bg_color: 0x1a1a2e
+      widgets:
+
+        # ── NAV BUTTONS ───────────────────────────────────
+        - button:
+            id: btn_p1_s
+            x: 680
+            y: 440
+            width: 50
+            height: 32
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0xb2bec3
+            radius: 6
+            widgets:
+              - label:
+                  text: "P1"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  align: CENTER
+            on_click:
+              - lvgl.page.show: page_battery
+
+        - button:
+            id: btn_p2_s
+            x: 740
+            y: 440
+            width: 50
+            height: 32
+            bg_color: 0x0f3460
+            border_width: 2
+            border_color: 0x0984e3
+            radius: 6
+            widgets:
+              - label:
+                  text: "P2"
+                  text_font: font_14
+                  text_color: 0x0984e3
+                  align: CENTER
+            on_click:
+              - lvgl.page.show: page_status
+
+        # ── ROW 1 : Inverter comm | Board | Charging status | Last Complete Charge ──
+        # Inverter comm.
+        - obj:
+            x: 20
+            y: 8
+            width: 178
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Inverter Comm."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_inv_comm
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+
+        # Board status
+        - obj:
+            x: 208
+            y: 8
+            width: 178
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Board Status"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_board_status
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+
+        # Charging status
+        - obj:
+            x: 396
+            y: 8
+            width: 178
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Charging Status"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_charging_status
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # Last complete charge
+        - obj:
+            x: 584
+            y: 8
+            width: 196
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 194
+                  text: "Last Complete Charge"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_last_charge
+                  x: 0
+                  y: 28
+                  width: 194
+                  text: "---"
+                  text_font: font_18
+                  text_color: 0xffffff
+                  text_align: CENTER
+
+        # ── ROW 2 : Alarm | Warning | Charge Instr. | Discharge Instr. ──
+        # Alarm
+        - obj:
+            x: 20
+            y: 92
+            width: 178
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Alarm"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_alarm
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0xe17055
+                  text_align: CENTER
+
+        # Warning
+        - obj:
+            x: 208
+            y: 92
+            width: 178
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Warning"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_warning
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0xfdcb6e
+                  text_align: CENTER
+
+        # Charging Instruction
+        - obj:
+            x: 396
+            y: 92
+            width: 178
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 176
+                  text: "Charge Instr."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_charge_instr
+                  x: 0
+                  y: 28
+                  width: 176
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0x00b894
+                  text_align: CENTER
+
+        # Discharging Instruction
+        - obj:
+            x: 584
+            y: 92
+            width: 196
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 194
+                  text: "Discharge Instr."
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_discharge_instr
+                  x: 0
+                  y: 28
+                  width: 194
+                  text: "---"
+                  text_font: font_22
+                  text_color: 0x00b894
+                  text_align: CENTER
+
+        # ── ROW 3 : BMS counters | Shunt counters | Uptime | Version ──
+        # BMS info panel
+        - obj:
+            x: 20
+            y: 176
+            width: 190
+            height: 170
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 188
+                  text: "BMS"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  x: 12
+                  y: 26
+                  text: "Count:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_bms_count
+                  x: 160
+                  y: 26
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 48
+                  text: "Combined:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_bms_combined
+                  x: 160
+                  y: 48
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 70
+                  text: "Blocking charge:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_bms_blk_chg
+                  x: 160
+                  y: 70
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 92
+                  text: "Blocking discharge:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_bms_blk_dchg
+                  x: 160
+                  y: 92
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 114
+                  text: "In alarm:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_bms_alarm
+                  x: 160
+                  y: 114
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xe17055
+
+        # Shunt
+        - obj:
+            x: 220
+            y: 176
+            width: 190
+            height: 170
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 188
+                  text: "Shunt"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  x: 12
+                  y: 26
+                  text: "Shunt count:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_shunt_count
+                  x: 160
+                  y: 26
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 48
+                  text: "Shunt combined:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_shunt_combined
+                  x: 160
+                  y: 48
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+
+        # System
+        - obj:
+            x: 420
+            y: 176
+            width: 360
+            height: 170
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 358
+                  text: "System"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  x: 12
+                  y: 26
+                  text: "CCL Der. Reason:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_ccl_derating_reason
+                  x: 160
+                  y: 26
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 48
+                  text: "DCL Der. Reason:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_dcl_derating_reason
+                  x: 160
+                  y: 48
+                  text: "--"
+                  text_font: font_14
+                  text_color: 0xffffff
+              #
+              # one line free (y: 70)
+              #
+              - label:
+                  x: 12
+                  y: 92
+                  text: "Board Uptime:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_uptime
+                  x: 160
+                  y: 92
+                  text: "---"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 114
+                  text: "ESPHome version:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_esphome_ver
+                  x: 160
+                  y: 114
+                  text: "---"
+                  text_font: font_14
+                  text_color: 0xffffff
+              - label:
+                  x: 12
+                  y: 136
+                  text: "YamBMS version:"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+              - label:
+                  id: lbl_yambms_ver
+                  x: 160
+                  y: 136
+                  text: "---"
+                  text_font: font_14
+                  text_color: 0xffffff
+
+        # ── ROW 4 : Requested Values (inverter) ───────────
+        - obj:
+            x: 20
+            y: 358
+            width: 760
+            height: 72
+            bg_color: 0x16213e
+            border_width: 1
+            border_color: 0x0f3460
+            radius: 6
+            widgets:
+              - label:
+                  x: 0
+                  y: 4
+                  width: 758
+                  text: "Requested Values to Inverter"
+                  text_font: font_14
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              # Charge Voltage
+              - label:
+                  x: 0
+                  y: 28
+                  width: 94
+                  text: "CVL:"
+                  text_font: font_18
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_req_cvl
+                  x: 94
+                  y: 28
+                  width: 94
+                  text: "--.- V"
+                  text_font: font_18
+                  text_color: 0x00b894
+                  text_align: LEFT
+              # Charge Current
+              - label:
+                  x: 188
+                  y: 28
+                  width: 94
+                  text: "CCL:"
+                  text_font: font_18
+                  text_color: 0xb2bec3
+                  text_align: CENTER
+              - label:
+                  id: lbl_req_ccl
+                  x: 282
+                  y: 28
+                  width: 94
+                  text: "--- A"
+                  text_font: font_18
+                  text_color: 0x00b894
+                  text_align: LEFT
+              # Discharge Voltage
+              - label:
+                  x: 376
+                  y: 28
+                  width: 94
+                  text: "DVL:"
+                  text_font: font_18
+                  text_color: 0xb2bec3
+                  text_align: RIGHT
+              - label:
+                  id: lbl_req_dvl
+                  x: 470
+                  y: 28
+                  width: 94
+                  text: "--.- V"
+                  text_font: font_18
+                  text_color: 0x74b9ff
+                  text_align: CENTER
+              # Discharge Current
+              - label:
+                  x: 564
+                  y: 28
+                  width: 94
+                  text: "DCL:"
+                  text_font: font_18
+                  text_color: 0xb2bec3
+                  text_align: RIGHT
+              - label:
+                  id: lbl_req_dcl
+                  x: 658
+                  y: 28
+                  width: 94
+                  text: "--- A"
+                  text_font: font_18
+                  text_color: 0x74b9ff
+                  text_align: CENTER
+
+# +---------------------------------------------------------+
+# | Sensor → LVGL bindings                                  |
+# +---------------------------------------------------------+
+
+sensor:
+
+  # ── PAGE 1 - BATTERY ──
+
+  - platform: template
+    id: !extend ${yambms_id}_total_voltage
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_voltage
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.1f V", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_current
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_current
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.1f A", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_power
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_power
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.0f W", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_installed_battery_capacity
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_installed_cap
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.0f Ah", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_battery_capacity
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_battery_cap
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.0f Ah", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_battery_capacity_remaining
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_cap_remaining
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.1f Ah", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_battery_soc
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_soc_value
+          text: !lambda 'return to_string((int)x) + " %";'
+      - lvgl.bar.update:
+          id: bar_soc
+          value: !lambda 'return (int)x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_battery_soh
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_soh
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.1f %%", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_max_cell_voltage
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_max_cell_v
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.3f V", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_max_voltage_cell
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_max_cell_num
+          text: !lambda 'return "Cell " + to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_min_cell_voltage
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_min_cell_v
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.3f V", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_min_voltage_cell
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_min_cell_num
+          text: !lambda 'return "Cell " + to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_delta_cell_voltage
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_delta_cell
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.3f V", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_max_temperature
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_max_temp
+          text: !lambda 'char buf[12]; snprintf(buf, 12, "↑ %.1f°C", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_max_temperature_sensor
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_max_temp_sensor
+          text: !lambda 'return "Sensor " + to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_min_temperature
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_min_temp
+          text: !lambda 'char buf[12]; snprintf(buf, 12, "↓ %.1f°C", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_min_temperature_sensor
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_min_temp_sensor
+          text: !lambda 'return "Sensor " + to_string((int)x);'
+
+  # ── PAGE 2 - STATUS ──
+
+  - platform: template
+    id: !extend ${yambms_id}_bms_count
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_bms_count
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_bms_combined
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_bms_combined
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_bms_blocking_charge
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_bms_blk_chg
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_bms_blocking_discharge
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_bms_blk_dchg
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_errors_bitmask_counter
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_bms_alarm
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_shunt_count
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_shunt_count
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_shunt_combined
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_shunt_combined
+          text: !lambda 'return to_string((int)x);'
+
+  - platform: template
+    id: !extend ${yambms_id}_requested_charge_voltage
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_req_cvl
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.1f V", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_requested_charge_current
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_req_ccl
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.0f A", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_requested_discharge_voltage
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_req_dvl
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.1f V", x); return buf;'
+
+  - platform: template
+    id: !extend ${yambms_id}_requested_discharge_current
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_req_dcl
+          text: !lambda 'char buf[16]; snprintf(buf, 16, "%.0f A", x); return buf;'
+
+text_sensor:
+
+  - platform: template
+    id: !extend ${yambms_id}_charging_status
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_charging_status
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_eoc_timestamp_human
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_last_charge
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_alarm
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_alarm
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_warning
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_warning
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_charging_instruction
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_charge_instr
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_ccl_derating_reason
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_ccl_derating_reason
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend ${yambms_id}_dcl_derating_reason
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_dcl_derating_reason
+          text: !lambda 'return x;'
+
+  - platform: template
+    id: !extend esp32_uptime
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_uptime
+          text: !lambda 'return x;'
+
+  - platform: version
+    id: !extend esp32_esphome_version
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_esphome_ver
+          text: !lambda 'return x.substr(0, 8);'
+
+  - platform: template
+    id: !extend ${yambms_id}_running_version
+    on_value:
+      then:
+      - lvgl.label.update:
+          id: lbl_yambms_ver
+          text: !lambda 'return x;'
+
+binary_sensor:
+  - platform: template
+    id: !extend ${yambms_id}_equalizing
+    on_state:
+      then:
+      - lvgl.label.update:
+          id: lbl_equalizing
+          text: !lambda 'return std::string("Equalizing: ") + (x ? "ON" : "OFF");'
+          text_color: !lambda 'return x ? lv_color_hex(0xfdcb6e) : lv_color_hex(0xb2bec3);'
+
+  - platform: template
+    id: !extend inverter_com_status
+    on_state:
+      then:
+      - lvgl.label.update:
+          id: lbl_inv_comm
+          text: !lambda 'return std::string(x ? "ONLINE" : "OFFLINE");'
+          text_color: !lambda 'return x ? lv_color_hex(0x00b894) : lv_color_hex(0xe17055);'
+
+  - platform: status
+    id: !extend esp32_online_status
+    on_state:
+      then:
+      - lvgl.label.update:
+          id: lbl_board_status
+          text: !lambda 'return std::string(x ? "ONLINE" : "OFFLINE");'
+          text_color: !lambda 'return x ? lv_color_hex(0x00b894) : lv_color_hex(0xe17055);'
+
+  - platform: template
+    id: !extend ${yambms_id}_discharging_instruction
+    on_state:
+      then:
+      - lvgl.label.update:
+          id: lbl_discharge_instr
+          text: !lambda 'return std::string(x ? "ALLOWED" : "BLOCKED");'
+          text_color: !lambda 'return x ? lv_color_hex(0x00b894) : lv_color_hex(0xe17055);'
