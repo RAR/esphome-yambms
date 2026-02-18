@@ -1,4 +1,4 @@
-# Updated : 2026.02.16
+# Updated : 2026.02.18
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -199,9 +199,11 @@ packages:
   # board_display: !include
   #   file: 'packages/board/board_options_display_128x128.yaml' # AtomS3 / AtomS3R display
   #   file: 'packages/board/board_options_display_480x222.yaml' # LilyGo T-Connect Pro display
+  #   file: 'packages/board/board_options_display_lvgl_800x480_basic_blue.yaml' # WS Touch LCD 4.3" and 7"
+
   #   vars:
   #     display_auto_next_page_interval: '5s'
-  #     display_rotation: '0' # 0/90/180/270 rotation angle in degrees  
+  #     display_rotation: '0' # 0/90/180/270 rotation angle in degrees
 
 
 
