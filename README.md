@@ -61,9 +61,29 @@ Come and discuss it on the [DIY Solar Forum dedicated topic](https://diysolarfor
 
 ![Image](images/YamBMS_Overview.png "YamBMS Overview")
 
-## Home Assistant
+## Home Assistant dashboard
+
+Available in the [HomeAssistant_Dashboards](HomeAssistant_Dashboards/) folder.
 
 ![Image](images/YamBMS_HA_Dashboard.png "YamBMS HA Dashboard")
+
+## YamBMS Display
+
+> [!TIP]
+> Tested with Waveshare ESP32-S3 Touch-LCD 4.3" and 7".
+
+Currently only available for a resolution of **800x480**.
+
+The display can retrieve information in two different ways :
+
+* **ESPHome version**: LVGL code executed on the **YamBMS node***
+  * Package to be imported => [board_options_display_lvgl_800x480_basic_blue_esphome.yaml](packages/board/board_options_display_lvgl_800x480_basic_blue_esphome.yaml)
+* **HA version**: LVGL code executed on a **standalone node*** with informations coming from `Home Assistant` (only requires a WiFi connection)
+  * Example => [YamBMS_RP_HA_Display.yaml](YamBMS_RP_HA_Display.yaml)
+
+![Image](images/YamBMS_Display.png "YamBMS Display")
+
+_node = an ESP32 / ESP32-S3 / ESP32-P4 / ..._
 
 ## Hardware highlighted
 
