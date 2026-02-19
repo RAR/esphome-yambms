@@ -1,4 +1,4 @@
-# Updated : 2026.02.18
+# Updated : 2026.02.19
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -1087,14 +1087,17 @@ binary_sensor:
   - platform: template
     id: ${yambms_id}_equalizing
     name: "${name} ${yambms_name} equalizing state"
+    trigger_on_initial_state: true
   # charging_allowed
   - platform: template
     id: ${yambms_id}_charging_allowed
     name: "${name} ${yambms_name} charging allowed"
+    trigger_on_initial_state: true
   # discharging_allowed
   - platform: template
     id: ${yambms_id}_discharging_allowed
     name: "${name} ${yambms_name} discharging allowed"
+    trigger_on_initial_state: true
   # +--------------------------------------+
   # | Discharging Instruction              |
   # +--------------------------------------+
@@ -1110,6 +1113,7 @@ binary_sensor:
     name: "${name} ${yambms_name} Requested Force Charge"
     id: ${yambms_id}_requested_force_charge
     icon: mdi:battery-charging-low
+    trigger_on_initial_state: true
     lambda: |-
       if (id(${yambms_id}_switch_request_force_charge).state)
       {
