@@ -1,5 +1,5 @@
-# Updated : 2026.02.05
-# Version : 1.7.0
+# Updated : 2026.02.20
+# Version : 1.1.2
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -17,25 +17,74 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
 
-# +--------------------------------------+
-# | M5Stack Tab5 Display (1280x720)     |
-# +--------------------------------------+
-# LVGL display configuration for M5Stack Tab5 with YamBMS sensors.
-# This package reads data directly from local YamBMS sensors.
-#
-# Required: M5Stack Tab5 board with MIPI DSI display
-# Required substitutions:
-#   yambms_id: The YamBMS ID to monitor
-#   canbus_id: The CANBUS ID for status indicator (e.g., 'canbus1')
+# +--------------------------------------------------------------------------+
+# | M5Stack Tab5 Display (1280x720)
+# +--------------------------------------------------------------------------+
+# | LVGL display configuration for M5Stack Tab5 with YamBMS sensors.
+# | This package reads data directly from local YamBMS sensors.
+# |
+# | Required: M5Stack Tab5 board with MIPI DSI display.
+# | Required substitutions: `yambms_id` , the YamBMS ID to monitor.
+# |
+# +--------------------------------------------------------------------------+
 
 # +--------------------------------------+
-# | Additional Fonts                     |
+# | Display Timeout                      |
+# +--------------------------------------+
+number:
+  - platform: template
+    id: display_timeout
+    device_id: ${board_id}
+    name: "Display timeout"
+    optimistic: true
+    unit_of_measurement: "s"
+    initial_value: 300
+    restore_value: true
+    min_value: 10
+    max_value: 300
+    step: 5
+    mode: box
+    entity_category: config
+
+# +--------------------------------------+
+# | Time (RTC and Home Assistant sync)   |
+# +--------------------------------------+
+time:
+  - platform: sntp
+    id: !extend my_time
+    on_time_sync:
+      then:
+        - rx8130.write_time:
+            id: rx8130_time
+  - platform: rx8130
+    id: rx8130_time
+    update_interval: 30 min
+
+esphome:
+  on_boot:
+    - then:
+        rx8130.read_time:
+
+# +--------------------------------------+
+# | Fonts                                |
 # +--------------------------------------+
 
 font:
   - file: "gfonts://Roboto"
+    id: roboto_12
+    size: 12
+    bpp: 4
+  - file: "gfonts://Roboto"
     id: roboto_15
     size: 15    
+    bpp: 4
+  - file: "gfonts://Roboto"
+    id: roboto_20
+    size: 20
+    bpp: 4
+  - file: "gfonts://Roboto"
+    id: roboto_25
+    size: 25
     bpp: 4
   - file: "gfonts://Roboto"
     id: roboto_30
@@ -230,7 +279,7 @@ interval:
           }
           
           // Update inverter CAN status
-          bool can_status = id(canbus${canbus_id}_status).state;
+          bool can_status = id(inverter_com_status).state;
           if (can_status) {
             lv_obj_set_style_text_color(id(lbl_CAN), lv_color_hex(0x13BF13), 0);
           } else {
@@ -249,6 +298,21 @@ interval:
           }
 
 # +--------------------------------------+
+# | Touch Screen actions                 |
+# +--------------------------------------+
+
+touchscreen:
+  - platform: gt911
+    id: !extend my_touchscreen
+    on_release: # when the finger leaves the screen surface
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - light.turn_on: backlight
+
+# +--------------------------------------+
 # | LVGL Configuration                   |
 # +--------------------------------------+
 
@@ -262,7 +326,8 @@ lvgl:
   byte_order: little_endian
   color_depth: 16
   buffer_size: 100%
-  bg_image_src: bg_image
+  # bg_image_src: bg_image
+  bg_color: 0x000000 # black background
   displays:
     - my_display
   touchscreens:
