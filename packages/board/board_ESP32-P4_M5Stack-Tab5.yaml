@@ -1,5 +1,5 @@
-# Updated : 2026.02.05
-# Version : 1.7.0
+# Updated : 2026.02.20
+# Version : 1.1.2
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -24,33 +24,30 @@
 # This requires the esp32_hosted component for WiFi
 # The display uses mipi_dsi interface (1280x720 at 270° rotation)
 
-# +--------------------------------------+
-# | COMMU Module (M011) Configuration    |
-# +--------------------------------------+
-# The COMMU module connects via M5-Bus and provides:
-# - MCP2515 CAN controller (SPI): MOSI=G18, MISO=G19, SCK=G5, CS=G2, INT=G47
-# - RS485 (SP3485): TX=G6, RX=G7 (uses Port C pins on M5-Bus)
-# - TTL UART: TX=G37, RX=G38 (uses UART0 pins on M5-Bus)
-# Include board_options_itf_canbus_mcp2515.yaml for CAN
-# Include board_options_itf_uart_1.yaml + board_options_itf_modbus.yaml for RS485
-#
-# +--------------------------------------+
-# | DIN BASE (M132) Configuration        |
-# +--------------------------------------+
-# +--------------------------------------+
-# | DIN BASE (M132) Configuration        |
-# +--------------------------------------+
-# The DIN BASE provides Port.A and Port.B for native TWAI CAN (requires CAN transceiver unit):
-# - Port.A: PA_IN=G53, PA_OUT=G54 (M5-Bus pins 2,3)
-# - Port.B: PB_IN=G17, PB_OUT=G52 (M5-Bus pins 4,10)
-# Include board_options_itf_canbus_esp32_can.yaml for native CAN
-# Recommended: Use M5Stack CAN Unit (U085) or PwrCAN Module (M013.2) on Port.A or Port.B
-#
+# +--------------------------------------------------------------------------------------------+
+# | COMMU Module (M011) Configuration
+# +--------------------------------------------------------------------------------------------+
+# | The COMMU module connects via M5-Bus and provides:
+# | - MCP2515 CAN controller (SPI): MOSI=G18, MISO=G19, SCK=G5, CS=G2, INT=G47
+# | - RS485 (SP3485): TX=G6, RX=G7 (uses Port C pins on M5-Bus)
+# | - TTL UART: TX=G37, RX=G38 (uses UART0 pins on M5-Bus)
+# | Include board_options_itf_canbus_mcp2515.yaml for CAN
+# | Include board_options_itf_uart_1.yaml + board_options_itf_modbus.yaml for RS485
+# |
+# +--------------------------------------------------------------------------------------------+
+# | DIN BASE (M132) Configuration
+# +--------------------------------------------------------------------------------------------+
+# | The DIN BASE provides Port.A and Port.B for native TWAI CAN (requires CAN transceiver unit):
+# | - Port.A: PA_IN=G53, PA_OUT=G54 (M5-Bus pins 2,3)
+# | - Port.B: PB_IN=G17, PB_OUT=G52 (M5-Bus pins 4,10)
+# | Include board_options_itf_canbus_esp32_can.yaml for native CAN
+# | Recommended: Use M5Stack CAN Unit (U085) or PwrCAN Module (M013.2) on Port.A or Port.B
+# |
+# +--------------------------------------------------------------------------------------------+
 
 substitutions:
   board_chip: "ESP32-P4"
   board_name: "M5Stack Tab5"
-  board_has_rgb: "false"
   # Interfaces GPIOs
   # I²C bus (internal peripherals)
   i2c_sda: '31'
@@ -81,9 +78,10 @@ substitutions:
 packages:
   device_base: !include ../base/device_base.yaml
   device_base_wifi: !include ../base/device_base_wifi.yaml
+  no_led_control: !include board_options_no_led_control.yaml
 
 esp32:
-  board: esp32-p4-evboard
+  variant: esp32p4
   flash_size: 16MB
   framework:
     type: esp-idf
@@ -94,13 +92,13 @@ esp32:
 esp32_hosted:
   variant: esp32c6
   active_high: true
-  clk_pin: GPIO12
-  cmd_pin: GPIO13
-  d0_pin: GPIO11
-  d1_pin: GPIO10
-  d2_pin: GPIO9
-  d3_pin: GPIO8
-  reset_pin: GPIO15
+  clk_pin: 12
+  cmd_pin: 13
+  d0_pin: 11
+  d1_pin: 10
+  d2_pin: 9
+  d3_pin: 8
+  reset_pin: 15
   slot: 1
 
 psram:
@@ -285,40 +283,40 @@ select:
 # | Display Timeout                      |
 # +--------------------------------------+
 
-number:
-  - platform: template
-    name: ${name} Screen Timeout
-    optimistic: true
-    id: display_timeout
-    unit_of_measurement: "s"
-    initial_value: 300
-    restore_value: true
-    min_value: 10
-    max_value: 300
-    step: 5
-    mode: box
-    entity_category: config
+# number:
+#   - platform: template
+#     name: ${name} Screen Timeout
+#     optimistic: true
+#     id: display_timeout
+#     unit_of_measurement: "s"
+#     initial_value: 300
+#     restore_value: true
+#     min_value: 10
+#     max_value: 300
+#     step: 5
+#     mode: box
+#     entity_category: config
 
 # +--------------------------------------+
 # | Time (RTC and Home Assistant sync)   |
 # +--------------------------------------+
 
-time:
-  - platform: rx8130
-    id: rx8130_time
-    update_interval: 30 min
+# time:
+#   - platform: rx8130
+#     id: rx8130_time
+#     update_interval: 30 min
 
-  - platform: homeassistant
-    id: homeassistant_time
-    on_time_sync:
-      then:
-        - rx8130.write_time:
-            id: rx8130_time
+#   - platform: homeassistant
+#     id: homeassistant_time
+#     on_time_sync:
+#       then:
+#         - rx8130.write_time:
+#             id: rx8130_time
 
-esphome:
-  on_boot:
-    - then:
-        rx8130.read_time:
+# esphome:
+#   on_boot:
+#     - then:
+#         rx8130.read_time:
 
 # +--------------------------------------+
 # | Touch Screen (GT911)                 |
@@ -327,7 +325,7 @@ esphome:
 touchscreen:
   - platform: gt911
     id: my_touchscreen
-    interrupt_pin: GPIO23
+    interrupt_pin: 23
     update_interval: never
     transform:
       swap_xy: true
@@ -340,13 +338,6 @@ touchscreen:
       y_max: 720
       x_min: 0
       x_max: 1280
-    on_release:
-      - if:
-          condition: lvgl.is_paused
-          then:
-            - lvgl.resume:
-            - lvgl.widget.redraw:
-            - light.turn_on: backlight
 
 # +--------------------------------------+
 # | Display (MIPI DSI 1280x720)          |
@@ -368,18 +359,6 @@ display:
 # | Backlight                            |
 # +--------------------------------------+
 
-output:
-  - platform: ledc
-    pin: GPIO22
-    id: backlight_pwm
-    frequency: 1000Hz
-  # ESP32 board without LED - template output for heartbeat
-  - platform: template
-    id: esp_output
-    type: binary
-    write_action:
-      - logger.log: "Inverter Heartbeat Output"
-
 light:
   - platform: monochromatic
     output: backlight_pwm
@@ -387,32 +366,9 @@ light:
     id: backlight
     restore_mode: ALWAYS_ON
     default_transition_length: 250ms
-  # ESP Light used to see the inverter heartbeat
-  # Internal : only specifying an id without a name will implicitly set this to true.
-  - platform: binary
-    id: esp_light
-    output: esp_output
 
-# +--------------------------------------+
-# | Fonts                                |
-# +--------------------------------------+
-
-font:
-  - file: "gfonts://Roboto"
-    id: roboto_12
-    size: 12
-    bpp: 4
-  - file: "gfonts://Roboto"
-    id: roboto_20
-    size: 20
-    bpp: 4
-  - file: "gfonts://Roboto"
-    id: roboto_25
-    size: 25
-    bpp: 4
-
-# +--------------------------------------+
-# | LVGL                                 |
-# +--------------------------------------+
-# Note: LVGL configuration is provided by board_options_display_Tab5_1280x720.yaml
-# Do not add lvgl: section here - it will cause duplicate display IDs
+output:
+  - platform: ledc
+    pin: 22
+    id: backlight_pwm
+    frequency: 1000Hz
