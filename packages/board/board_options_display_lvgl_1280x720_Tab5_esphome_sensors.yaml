@@ -126,7 +126,7 @@ interval:
             lv_label_set_text(id(soc_text), buf);
             
             // Update native LVGL battery fill
-            int fill_height = (int)(soc * 5); // 500px shell, 0-100% → 0-500px
+            int fill_height = (int)(soc * 4); // 400px shell, 0-100% → 0-400px
             lv_obj_set_height(id(battery_fill_soc), fill_height);
             // Color: green >80%, yellow >20%, red ≤20%
             if (soc > 80) {

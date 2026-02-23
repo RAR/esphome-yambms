@@ -310,7 +310,7 @@ sensor:
             args: [ 'x' ]
       - lvgl.obj.update:
           id: battery_fill_soc
-          height: !lambda 'return (int)(x * 5);'
+          height: !lambda 'return (int)(x * 4);'
           bg_color: !lambda |-
             if (x > 80) return lv_color_hex(0x00CC00); // green
             if (x > 20) return lv_color_hex(0xFFAA00); // yellow

@@ -311,9 +311,9 @@ lvgl:
               y: 15
           # Battery terminal nub (+)
           - obj:
-              x: 120
+              x: 115
               y: 108
-              width: 40
+              width: 50
               height: 12
               bg_color: 0x9C9C9C
               border_width: 0
@@ -321,10 +321,10 @@ lvgl:
               scrollbar_mode: "off"
           # Battery shell
           - obj:
-              x: 80
+              x: 65
               y: 120
-              width: 120
-              height: 500
+              width: 150
+              height: 400
               bg_color: 0x1A1A1A
               border_width: 3
               border_color: 0x9C9C9C
