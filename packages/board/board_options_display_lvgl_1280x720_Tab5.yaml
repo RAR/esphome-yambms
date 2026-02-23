@@ -198,7 +198,7 @@ lvgl:
               - label:
                   id: voltage_text
                   text_font: roboto_45
-                  text: "00.00v"
+                  text: "00.00V"
                   text_color: 0xFFFFFF
                   align: BOTTOM_RIGHT
           - obj:
@@ -214,7 +214,7 @@ lvgl:
               - label:
                   id: delta_voltage_text
                   text_font: roboto_45
-                  text: "0.000v"
+                  text: "0 mV"
                   text_color: 0xFFFFFF
                   align: BOTTOM_RIGHT
           - obj:
@@ -437,7 +437,7 @@ lvgl:
                     text_font: roboto_45
                     align: CENTER
                     text_color: 0xFFFFFF
-                    text: "0 a"
+                    text: "0 A"
                     y: 70
                 - label:
                     id: current_name
@@ -499,7 +499,7 @@ lvgl:
                     text_font: roboto_45
                     align: CENTER
                     text_color: 0xFFFFFF
-                    text: "0.0 kw"
+                    text: "0.0 kW"
                     y: 70
                 - label:
                     id: power_name
