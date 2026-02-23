@@ -34,7 +34,7 @@
 # |           lbl_CAN, lbl_ESP
 # |   Meters: current_meter (needle: current_needle),
 # |           power_meter (needle: power_needle)
-# |   Images: batt_img
+# |   Battery: battery_fill_soc (pure LVGL, no images)
 # |
 # +--------------------------------------------------------------------------+
 
@@ -89,35 +89,10 @@ font:
     bpp: 4
 
 # +--------------------------------------+
-# | Battery Images                       |
+# | Background Image (optional)          |
 # +--------------------------------------+
 
 image:
-  - file: https://raw.githubusercontent.com/RAR/esphome-yambms/ble-client-server/images/battery_level_1.png
-    id: battery_1
-    type: rgb565
-    byte_order: little_endian
-    transparency: alpha_channel
-  - file: https://raw.githubusercontent.com/RAR/esphome-yambms/ble-client-server/images/battery_level_2.png
-    id: battery_2
-    type: rgb565
-    byte_order: little_endian
-    transparency: alpha_channel
-  - file: https://raw.githubusercontent.com/RAR/esphome-yambms/ble-client-server/images/battery_level_3.png
-    id: battery_3
-    type: rgb565
-    byte_order: little_endian
-    transparency: alpha_channel
-  - file: https://raw.githubusercontent.com/RAR/esphome-yambms/ble-client-server/images/battery_level_4.png
-    id: battery_4
-    type: rgb565
-    byte_order: little_endian
-    transparency: alpha_channel
-  - file: https://raw.githubusercontent.com/RAR/esphome-yambms/ble-client-server/images/battery_level_5.png
-    id: battery_5
-    type: rgb565
-    byte_order: little_endian
-    transparency: alpha_channel
   - file: https://raw.githubusercontent.com/RAR/esphome-yambms/ble-client-server/images/background.png
     id: bg_image
     type: rgb565
@@ -316,7 +291,7 @@ lvgl:
                   text_color: 0xFFFFFF
                   align: BOTTOM_RIGHT
 
-      # Center column - battery image + SoC
+      # Center column - native LVGL battery + SoC
       - obj:
           height: 700
           width: 280
@@ -326,10 +301,7 @@ lvgl:
           pad_all: 4
           y: 30
           widgets:
-          - image:
-              align: CENTER
-              id: batt_img
-              src: battery_1
+          # SoC percentage text
           - label:
               align: TOP_MID
               id: soc_text
@@ -337,6 +309,41 @@ lvgl:
               text: "0%"
               text_color: 0xFFFFFF
               y: 15
+          # Battery terminal nub (+)
+          - obj:
+              x: 120
+              y: 108
+              width: 40
+              height: 12
+              bg_color: 0x9C9C9C
+              border_width: 0
+              radius: 2
+              scrollbar_mode: "off"
+          # Battery shell
+          - obj:
+              x: 80
+              y: 120
+              width: 120
+              height: 500
+              bg_color: 0x1A1A1A
+              border_width: 3
+              border_color: 0x9C9C9C
+              radius: 8
+              pad_all: 0
+              scrollbar_mode: "off"
+              widgets:
+                # SoC fill bar — grows upward from bottom
+                - obj:
+                    id: battery_fill_soc
+                    x: 0
+                    y: 0
+                    width: 100%
+                    height: 0
+                    bg_color: 0x00CC00
+                    border_width: 0
+                    radius: 4
+                    align: BOTTOM_LEFT
+                    scrollbar_mode: "off"
 
       # Right column - status + gauges
       - obj:

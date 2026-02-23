@@ -308,21 +308,13 @@ sensor:
           text:
             format: "%.0f%%"
             args: [ 'x' ]
-      - lvgl.image.update:
-          id: batt_img
-          src: !lambda |-
-            if (x > 80) {
-                return id(battery_5);
-            } else if (x > 60) {
-                return id(battery_4);
-            } else if (x > 40) {
-                return id(battery_3);
-            } else if (x > 20) {
-                return id(battery_2);
-            } else {
-                return id(battery_1);
-            }
-            return id(battery_1);
+      - lvgl.obj.update:
+          id: battery_fill_soc
+          height: !lambda 'return (int)(x * 5);'
+          bg_color: !lambda |-
+            if (x > 80) return lv_color_hex(0x00CC00); // green
+            if (x > 20) return lv_color_hex(0xFFAA00); // yellow
+            return lv_color_hex(0xFF0000);              // red
 
 # +--------------------------------------+
 # | Touch Screen actions                 |

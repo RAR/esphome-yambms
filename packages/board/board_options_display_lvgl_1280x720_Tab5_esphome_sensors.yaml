@@ -125,17 +125,16 @@ interval:
             snprintf(buf, sizeof(buf), "%.0f%%", soc);
             lv_label_set_text(id(soc_text), buf);
             
-            // Update battery image based on SOC
+            // Update native LVGL battery fill
+            int fill_height = (int)(soc * 5); // 500px shell, 0-100% → 0-500px
+            lv_obj_set_height(id(battery_fill_soc), fill_height);
+            // Color: green >80%, yellow >20%, red ≤20%
             if (soc > 80) {
-              lv_img_set_src(id(batt_img), id(battery_5));
-            } else if (soc > 60) {
-              lv_img_set_src(id(batt_img), id(battery_4));
-            } else if (soc > 40) {
-              lv_img_set_src(id(batt_img), id(battery_3));
+              lv_obj_set_style_bg_color(id(battery_fill_soc), lv_color_hex(0x00CC00), 0);
             } else if (soc > 20) {
-              lv_img_set_src(id(batt_img), id(battery_2));
+              lv_obj_set_style_bg_color(id(battery_fill_soc), lv_color_hex(0xFFAA00), 0);
             } else {
-              lv_img_set_src(id(batt_img), id(battery_1));
+              lv_obj_set_style_bg_color(id(battery_fill_soc), lv_color_hex(0xFF0000), 0);
             }
           }
           
