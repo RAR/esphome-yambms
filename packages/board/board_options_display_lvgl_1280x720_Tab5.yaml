@@ -312,7 +312,7 @@ lvgl:
           # Battery terminal nub (+)
           - obj:
               x: 109
-              y: 178
+              y: 148
               width: 62
               height: 12
               bg_color: 0x9C9C9C
@@ -322,7 +322,7 @@ lvgl:
           # Battery shell
           - obj:
               x: 46
-              y: 190
+              y: 160
               width: 188
               height: 400
               bg_color: 0x1A1A1A
