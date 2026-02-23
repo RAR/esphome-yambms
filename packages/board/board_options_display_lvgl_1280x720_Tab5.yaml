@@ -31,7 +31,7 @@
 # |           bms_alarming_text, soc_text, discharging_allowed_text,
 # |           charging_allowed_text, current_text, current_name,
 # |           power_text, power_name, lbl_hastatus, time_text,
-# |           lbl_CAN, lbl_ESP
+# |           lbl_INV, lbl_ESP
 # |   Meters: current_meter (needle: current_needle),
 # |           power_meter (needle: power_needle)
 # |   Battery: battery_fill_soc (pure LVGL, no images)
@@ -560,13 +560,13 @@ lvgl:
                 text_font: roboto_25
                 text_color: 0xFFFFFF
             - label:
-                id: lbl_CAN
+                id: lbl_INV
                 x: 25
                 y: 10
                 align: top_left
                 text_font: roboto_20
                 text_align: left
-                text: "CAN"
+                text: "INV"
                 text_color: 0xBF1327
             - label:
                 id: lbl_ESP

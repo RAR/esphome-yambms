@@ -126,7 +126,7 @@ binary_sensor:
     internal: true
     on_state_change:
       - lvgl.label.update:
-          id: lbl_CAN
+          id: lbl_INV
           text_color: !lambda |-
             if (x) {
               return lv_color_hex(0x13BF13);
@@ -198,7 +198,7 @@ sensor:
       - lvgl.label.update:
           id: current_text
           text:
-            format: "%.1f a"
+            format: "%.1f A"
             args: [ 'x' ]
       - lvgl.label.update:
           id: overall_state
@@ -225,7 +225,7 @@ sensor:
       - lvgl.label.update:
           id: power_text
           text:
-            format: "%.2f kw"
+            format: "%.2f kW"
             args: [ 'x' ]
 
   - platform: homeassistant
@@ -247,8 +247,8 @@ sensor:
       - lvgl.label.update:
           id: delta_voltage_text
           text:
-            format: "%.3fv"
-            args: [ 'x' ]
+            format: "%.0f mV"
+            args: [ 'x * 1000.0f' ]
 
   - platform: homeassistant
     id: yambms_alarming

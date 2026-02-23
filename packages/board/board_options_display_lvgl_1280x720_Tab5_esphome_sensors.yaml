@@ -80,7 +80,7 @@ interval:
           if (!isnan(current)) {
             lv_meter_set_indicator_value(id(current_meter), id(current_needle), (int32_t)current);
             char buf[32];
-            snprintf(buf, sizeof(buf), "%.1f a", current);
+            snprintf(buf, sizeof(buf), "%.1f A", current);
             lv_label_set_text(id(current_text), buf);
             
             // Update overall state based on current
@@ -98,7 +98,7 @@ interval:
           if (!isnan(power)) {
             lv_meter_set_indicator_value(id(power_meter), id(power_needle), (int32_t)(power));
             char buf[32];
-            snprintf(buf, sizeof(buf), "%.2f kw", power);
+            snprintf(buf, sizeof(buf), "%.2f kW", power);
             lv_label_set_text(id(power_text), buf);
           }
           
@@ -110,11 +110,11 @@ interval:
             lv_label_set_text(id(voltage_text), buf);
           }
           
-          // Update delta cell voltage
+          // Update delta cell voltage (display in mV)
           float delta = id(${yambms_id}_delta_cell_voltage).state;
           if (!isnan(delta)) {
             char buf[32];
-            snprintf(buf, sizeof(buf), "%.3fv", delta);
+            snprintf(buf, sizeof(buf), "%.0f mV", delta * 1000.0f);
             lv_label_set_text(id(delta_voltage_text), buf);
           }
           
@@ -193,12 +193,12 @@ interval:
             lv_obj_set_style_text_color(id(discharging_allowed_text), lv_color_hex(0xBF1327), 0);
           }
           
-          // Update inverter CAN status
-          bool can_status = id(inverter_com_status).state;
-          if (can_status) {
-            lv_obj_set_style_text_color(id(lbl_CAN), lv_color_hex(0x13BF13), 0);
+          // Update inverter communication status (CAN or RS485)
+          bool inv_status = id(inverter_com_status).state;
+          if (inv_status) {
+            lv_obj_set_style_text_color(id(lbl_INV), lv_color_hex(0x13BF13), 0);
           } else {
-            lv_obj_set_style_text_color(id(lbl_CAN), lv_color_hex(0xBF1327), 0);
+            lv_obj_set_style_text_color(id(lbl_INV), lv_color_hex(0xBF1327), 0);
           }
 
   - interval: 10s
