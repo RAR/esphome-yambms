@@ -1,7 +1,6 @@
-# Updated : 2026.02.19
+# Updated : 2026.02.27
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
-# HA      : 2026.2.3
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
 
@@ -84,13 +83,12 @@ packages:
   # | >>> Uncomment the display that corresponds to your board
   # +------------------------------------------------------------------------------+
 
-      - path: 'packages/board/board_options_display_lvgl_800x480_basic_blue_ha.yaml' # 800x480 basic blue display   
+      - path: 'packages/board/board_options_display_lvgl_800x480_basic_blue_ha.yaml' # 800x480 basic blue display
+      # - path: 'packages/board/board_options_display_lvgl_1280x720_Tab5_ha.yaml' # 1280x720 Tab5 display
         vars:
           # Generally, the friendly_name of your YamBMS node is in lowercase; spaces are replaced by underscores.
           entity_prefix: 'yambms' # 'yambms' by default
-      # - path: 'packages/board/board_options_display_lvgl_1280x720_Tab5_ha.yaml' # 1280x720 Tab5 display
-      #   vars:
-      #     entity_prefix: 'yambms' # 'yambms' by default
+
 
 
   # +------------------------------------------------------------------------------+
