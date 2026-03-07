@@ -1,5 +1,5 @@
-# Updated : 2026.02.22
-# Version : 1.7.1
+# Updated : 2026.03.08
+# Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -356,6 +356,8 @@ interval:
           int processed_device_counter = (id(${yambms_id}_var_to_combine_bms_number) + id(${yambms_id}_var_to_combine_shunt_number));
           if ((device_counter + 2) == processed_device_counter)
           {
+            ESP_LOGD("yambms_debug", "===> STEP 2 : Entering YamBMS combiner... <===");
+
             // No combined BMS > YamBMS need to be re-initialized
             if (id(${yambms_id}_var_to_combine_bms_counter) == 0)
             {
@@ -474,58 +476,55 @@ interval:
             // | Max charge current                            |
             // +-----------------------------------------------+
             int cc_step = id(${yambms_id}_var_charge_current_step);
-            if (cc_step == 0 || cc_step == id(${yambms_id}_var_auto_ccl_functions_count) + 2)
+
+            ESP_LOGD("yambms_debug", "Entering Max charge current...");
+
+            float max_charge_current = 0.0;
+
+            if (id(${yambms_id}_var_to_combine_bms_counter) > 0)
             {
-              ESP_LOGD("yambms_debug", "Entering Max charge current...");
+              float max_charge_current_yambms = id(${yambms_id}_max_requested_charge_current).state;
+              float max_charge_current_bms = id(${yambms_id}_var_total_max_charge_current) * 0.9;
 
-              float max_charge_current = 0.0;
+              if (max_charge_current_bms > max_charge_current_yambms)
+                max_charge_current = max_charge_current_yambms;
+              else
+                max_charge_current = max_charge_current_bms;
 
-              if (id(${yambms_id}_var_to_combine_bms_counter) > 0)
-              {
-                float max_charge_current_yambms = id(${yambms_id}_max_requested_charge_current).state;
-                float max_charge_current_bms = id(${yambms_id}_var_total_max_charge_current) * 0.9;
+              ESP_LOGD("yambms_debug", "Max charge current YamBMS : %f A", max_charge_current_yambms);
+              ESP_LOGD("yambms_debug", "Max charge current BMS : %f A", max_charge_current_bms);
 
-                if (max_charge_current_bms > max_charge_current_yambms)
-                  max_charge_current = max_charge_current_yambms;
-                else
-                  max_charge_current = max_charge_current_bms;
-
-                ESP_LOGD("yambms_debug", "Max charge current YamBMS : %f A", max_charge_current_yambms);
-                ESP_LOGD("yambms_debug", "Max charge current BMS : %f A", max_charge_current_bms);
-              }
-              id(${yambms_id}_max_charge_current).publish_state(round(max_charge_current));
-              id(${yambms_id}_var_charge_current_step) = 1;
-              ESP_LOGD("yambms_debug", "Max charge current : %f A", max_charge_current);
-
+              if (cc_step == 0) id(${yambms_id}_var_charge_current_step) = 1;
             }
+            id(${yambms_id}_max_charge_current).publish_state(round(max_charge_current));
+            ESP_LOGD("yambms_debug", "Max charge current : %f A", max_charge_current);
 
             // +-----------------------------------------------+
             // | Max discharge current                         |
             // +-----------------------------------------------+
             int dc_step = id(${yambms_id}_var_discharge_current_step);
-            if (dc_step == 0 || dc_step == id(${yambms_id}_var_auto_dcl_functions_count) + 2)
+
+            ESP_LOGD("yambms_debug", "Entering Max discharge current...");
+
+            float max_discharge_current = 0.0;
+
+            if (id(${yambms_id}_var_to_combine_bms_counter) > 0)
             {
-              ESP_LOGD("yambms_debug", "Entering Max discharge current...");
+              float max_discharge_current_yambms = id(${yambms_id}_max_requested_discharge_current).state;
+              float max_discharge_current_bms = id(${yambms_id}_var_total_max_discharge_current) * 0.9;
 
-              float max_discharge_current = 0.0;
+              if (max_discharge_current_bms > max_discharge_current_yambms)
+                max_discharge_current = max_discharge_current_yambms;
+              else
+                max_discharge_current = max_discharge_current_bms;
 
-              if (id(${yambms_id}_var_to_combine_bms_counter) > 0)
-              {
-                float max_discharge_current_yambms = id(${yambms_id}_max_requested_discharge_current).state;
-                float max_discharge_current_bms = id(${yambms_id}_var_total_max_discharge_current) * 0.9;
+              ESP_LOGD("yambms_debug", "Max discharge current YamBMS : %f A", max_discharge_current_yambms);
+              ESP_LOGD("yambms_debug", "Max discharge current BMS : %f A", max_discharge_current_bms);
 
-                if (max_discharge_current_bms > max_discharge_current_yambms)
-                  max_discharge_current = max_discharge_current_yambms;
-                else
-                  max_discharge_current = max_discharge_current_bms;
-
-                ESP_LOGD("yambms_debug", "Max discharge current YamBMS : %f A", max_discharge_current_yambms);
-                ESP_LOGD("yambms_debug", "Max discharge current BMS : %f A", max_discharge_current_bms);
-              }
-              id(${yambms_id}_max_discharge_current).publish_state(round(max_discharge_current));
-              id(${yambms_id}_var_discharge_current_step) = 1;
-              ESP_LOGD("yambms_debug", "Max discharge current : %f A", max_discharge_current);
+              if (dc_step == 0) id(${yambms_id}_var_discharge_current_step) = 1;
             }
+            id(${yambms_id}_max_discharge_current).publish_state(round(max_discharge_current));
+            ESP_LOGD("yambms_debug", "Max discharge current : %f A", max_discharge_current);
 
             // +-----------------------------------------------+
             // | MAX balance_trigger_voltage                   |
@@ -682,6 +681,9 @@ interval:
               (id(${yambms_id}_charging_allowed).has_state()) &&
               (id(${yambms_id}_discharging_allowed).has_state()))
           {
+            
+            ESP_LOGD("yambms_debug", "===> STEP 3 : Entering YamBMS logic... <===");
+
             // +-----------------------------------------------+
             // | Charging Logic                                |
             // +-----------------------------------------------+
@@ -717,12 +719,18 @@ interval:
               // +-----------------------------------------------+
               // | Rebulk Logic                                  |
               // +-----------------------------------------------+
+              // Init / Wait
+              else if ((id(${yambms_id}_var_charge_status) == "Init") || (id(${yambms_id}_var_charge_status) == "Wait"))
+                id(${yambms_id}_var_charge_status) = "Bulk";
               // Max Cell V. <= 3.3V (default value)
-              else if (max_cell_v <= cell_rebulk_v) id(${yambms_id}_var_charge_status) = "Bulk";
+              else if (max_cell_v <= cell_rebulk_v)
+                id(${yambms_id}_var_charge_status) = "Bulk";
               // SoC <= 85% (default value)
-              else if (id(${yambms_id}_battery_soc).state <= id(${yambms_id}_rebulk_soc).state) id(${yambms_id}_var_charge_status) = "Bulk";
+              else if (id(${yambms_id}_battery_soc).state <= id(${yambms_id}_rebulk_soc).state)
+                id(${yambms_id}_var_charge_status) = "Bulk";
               // Force Charge requested
-              else if (id(${yambms_id}_requested_force_charge).state) id(${yambms_id}_var_charge_status) = "Bulk";
+              else if (id(${yambms_id}_requested_force_charge).state)
+                id(${yambms_id}_var_charge_status) = "Bulk";
 
               // +-----------------------------------------------+
               // | Charging Logic (Bulk)                         |
@@ -734,8 +742,10 @@ interval:
                 float cv_max = id(${yambms_id}_var_cell_max_charge_v);
                 float current = id(${yambms_id}_current).state;
                 float cutoff_resistance = ((cv_max - cv_min) / id(${yambms_id}_battery_capacity).state / 0.05);
-                static int cutoff_counter = 0;
-                static int bulk_counter = 0;
+
+                uint32_t ms_now = millis();
+                static uint32_t ms_cutoff = ms_now;
+                static uint32_t ms_bulk = ms_now;
 
                 // +-----------------------------------------------+
                 // | Cut-Off Charging Logic                        |
@@ -744,82 +754,71 @@ interval:
                 {
                   float cutoff_voltage = (max_cell_v - cutoff_resistance * current);
 
-                  if(cutoff_voltage > cv_min)
-                  {
-                    cutoff_counter++;
-                    bulk_counter = 0;
-                  }
+                  if (cutoff_voltage > cv_min)     // The Cut-Off conditions are valid
+                    ms_bulk = ms_now;              // Reset millis to not enter the Bulk phase
                   else
-                  {
-                    bulk_counter++;
-                    cutoff_counter = 0;
-                  }
-
-                  // Entering the Cut-Off phase
-                  // The criteria check must succeed 5 times in a row to ensure
-                  // that these are not random/erroneous/false readings of the BMS
-                  if (cutoff_counter > 4)
-                  {
-                    ESP_LOGD("yambms_debug", "Entering the Cut-Off phase...");
-
-                    // Cut-Off : the end of charging is near
-                    id(${yambms_id}_var_charge_status) = "Cut-Off";
-
-                    // If the EOC Timer switch is enabled
-                    if (id(${yambms_id}_switch_eoc_timer).state)
-                    {
-                      // Start EOC timer
-                      // The charging process ends at the latest at the end of this timer (30min by default)
-                      if (!id(${yambms_id}_script_eoc_timer).is_running())
-                        id(${yambms_id}_script_eoc_timer).execute();
-                    }
-                    // End Of Charge
-                    // Equalizing
-                    if (id(${yambms_id}_equalizing).state)
-                    {
-                      // Stop cut-off timer
-                      if (id(${yambms_id}_script_cutoff_timer).is_running())
-                        id(${yambms_id}_script_cutoff_timer).stop();
-                    }
-                    // Not Equalizing => Start cut-off timer
-                    // If the conditions continue to be respected the charging process will stop in 60s (default value)
-                    else if (!id(${yambms_id}_script_cutoff_timer).is_running())
-                      id(${yambms_id}_script_cutoff_timer).execute();
-                  }
-                  // Continue charging
-                  // The criteria check must succeed 5 times in a row to ensure
-                  // that these are not random/erroneous/false readings of the BMS
-                  else if (bulk_counter > 4)
-                  {
-                    // Stop timer
-                    if (id(${yambms_id}_script_eoc_timer).is_running()) id(${yambms_id}_script_eoc_timer).stop();
-                    if (id(${yambms_id}_script_cutoff_timer).is_running()) id(${yambms_id}_script_cutoff_timer).stop();
-                    // Balancing : the BMS is equalizing the cells
-                    if (id(${yambms_id}_equalizing).state) id(${yambms_id}_var_charge_status) = "Balancing";
-                    // Bulk
-                    else id(${yambms_id}_var_charge_status) = "Bulk";
-                  }
+                    ms_cutoff = ms_now;            // Reset millis to not enter the Cut-Off phase
                 }
-                // Discharging (!= "EOC" | != "Float")
-                // Condition for not exiting the Cut-Off phase too quickly if the discharge current is minimal
-                else if (max_cell_v < (cell_bulk_v - cutoff_resistance))
+                else ms_cutoff = ms_now;           // Reset millis to not enter the Cut-Off phase
+                
+                // Cut-Off phase
+                // The criteria check must succeed for 10s to ensure that
+                // these are not random/erroneous/false readings of the BMS
+                if (ms_now - ms_cutoff >= 10000) // 10s
                 {
-                  // Reset cut-off counter
-                  cutoff_counter = 0;
+                  ESP_LOGD("yambms_debug", "Entering the Cut-Off phase...");
+
+                  // Cut-Off : the end of charging is near
+                  id(${yambms_id}_var_charge_status) = "Cut-Off";
+
+                  // If the EOC Timer switch is enabled
+                  if (id(${yambms_id}_switch_eoc_timer).state)
+                  {
+                    // Start EOC timer
+                    // The charging process ends at the latest at the end of this timer (30min by default)
+                    if (!id(${yambms_id}_script_eoc_timer).is_running())
+                      id(${yambms_id}_script_eoc_timer).execute();
+                  }
+                  // End Of Charge
+                  // Equalizing
+                  if (id(${yambms_id}_equalizing).state)
+                  {
+                    // Stop cut-off timer
+                    if (id(${yambms_id}_script_cutoff_timer).is_running())
+                      id(${yambms_id}_script_cutoff_timer).stop();
+                  }
+                  // Not Equalizing => Start cut-off timer
+                  // If the conditions continue to be respected the charging process will stop in 60s (default value)
+                  else if (!id(${yambms_id}_script_cutoff_timer).is_running())
+                    id(${yambms_id}_script_cutoff_timer).execute();
+                }
+                // Bulk phase
+                // The criteria check must succeed for 10s to ensure that
+                // these are not random/erroneous/false readings of the BMS
+                else if (ms_now - ms_bulk >= 10000) // 10s
+                {
+                  ESP_LOGD("yambms_debug", "Entering the Bulk phase...");
                   // Stop timer
                   if (id(${yambms_id}_script_eoc_timer).is_running()) id(${yambms_id}_script_eoc_timer).stop();
                   if (id(${yambms_id}_script_cutoff_timer).is_running()) id(${yambms_id}_script_cutoff_timer).stop();
+                  // Balancing : the BMS is equalizing the cells
+                  if (id(${yambms_id}_equalizing).state) id(${yambms_id}_var_charge_status) = "Balancing";
                   // Bulk
-                  id(${yambms_id}_var_charge_status) = "Bulk";
+                  else id(${yambms_id}_var_charge_status) = "Bulk";
                 }
               }
             }
             // Charging not allowed (BMS or YamBMS)
             else if (id(${yambms_id}_var_bms_charging_logic) == true)
             {
+              ESP_LOGD("yambms_debug", "Charging not allowed !");
               if (!id(${yambms_id}_switch_charging).state) id(${yambms_id}_var_charge_status) = "Wait";
             }
-            else id(${yambms_id}_var_charge_status) = "Wait";
+            else
+            {
+              ESP_LOGD("yambms_debug", "Charging not allowed !");
+              id(${yambms_id}_var_charge_status) = "Wait";
+            }
 
             // Publish the sensor
             id(${yambms_id}_charging_status).publish_state(id(${yambms_id}_var_charge_status));
@@ -893,6 +892,7 @@ interval:
             if (cc_step == id(${yambms_id}_var_auto_ccl_functions_count) + 1)
             {
               ESP_LOGD("yambms_debug", "Entering Requested CCL...");
+              ESP_LOGD("yambms_debug", "Charging instruction : %s", charging_instruction.c_str());
 
               // Charging Not Allowed
               int requested_charge_current = 0;
@@ -913,16 +913,10 @@ interval:
               // Publish the sensor
               id(${yambms_id}_requested_charge_current).publish_state(requested_charge_current);
 
-              if (id(${yambms_id}_switch_charging).state) {
-                ESP_LOGD("yambms_debug", "Charging switch : true");
-                if (requested_charge_current > 0) id(${yambms_id}_var_requested_ccl_init) = true;
-              }
-              else {
-                ESP_LOGD("yambms_debug", "Charging switch : false");
+              if (id(${yambms_id}_var_charge_status) != "Init")
                 id(${yambms_id}_var_requested_ccl_init) = true;
-              }
-
-              id(${yambms_id}_var_charge_current_step)++;              
+              
+              id(${yambms_id}_var_charge_current_step) = 1;
             }
 
             // +-----------------------------------------------+
@@ -948,18 +942,9 @@ interval:
 
               // Publish the sensor
               id(${yambms_id}_requested_discharge_current).publish_state(requested_discharge_current);
-              
 
-              if (id(${yambms_id}_switch_discharging).state) {
-                ESP_LOGD("yambms_debug", "Discharging switch : true");
-                if (requested_discharge_current > 0) id(${yambms_id}_var_requested_dcl_init) = true;
-              }
-              else {
-                ESP_LOGD("yambms_debug", "Discharging switch : false");
-                id(${yambms_id}_var_requested_dcl_init) = true;
-              }
-
-              id(${yambms_id}_var_discharge_current_step)++;
+              id(${yambms_id}_var_requested_dcl_init) = true;
+              id(${yambms_id}_var_discharge_current_step) = 1;
             }
 
             // +-----------------------------------------------+
