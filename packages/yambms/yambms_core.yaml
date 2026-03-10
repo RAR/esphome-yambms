@@ -1,4 +1,4 @@
-# Updated : 2026.03.08
+# Updated : 2026.03.10
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -750,21 +750,46 @@ interval:
                 // +-----------------------------------------------+
                 // | Cut-Off Charging Logic                        |
                 // +-----------------------------------------------+
+
+                // Charging
                 if (current >= 0)
                 {
                   float cutoff_voltage = (max_cell_v - cutoff_resistance * current);
 
-                  if (cutoff_voltage > cv_min)     // The Cut-Off conditions are valid
+                  if (cutoff_voltage >= cv_min)    // The Cut-Off conditions are valid
                     ms_bulk = ms_now;              // Reset millis to not enter the Bulk phase
                   else
                     ms_cutoff = ms_now;            // Reset millis to not enter the Cut-Off phase
                 }
-                else ms_cutoff = ms_now;           // Reset millis to not enter the Cut-Off phase
-                
-                // Cut-Off phase
+                // Discharging
+                else if (max_cell_v < cell_bulk_v - cutoff_resistance)
+                {
+                  ms_cutoff = ms_now;              // Reset millis to not enter the Cut-Off phase
+                }
+                else                               // Grey zone, no charge_status changes
+                {
+                  ms_bulk = ms_now;                // Reset millis to not enter the Bulk phase
+                  ms_cutoff = ms_now;              // Reset millis to not enter the Cut-Off phase
+                }
+
+                // Regarding the transition between Bulk and Cut-Off phase
                 // The criteria check must succeed for 10s to ensure that
                 // these are not random/erroneous/false readings of the BMS
-                if (ms_now - ms_cutoff >= 10000) // 10s
+
+                // Bulk phase
+                if (ms_now - ms_bulk >= 10000) // 10s
+                {
+                  ESP_LOGD("yambms_debug", "Entering the Bulk phase...");
+                  // Stop timer
+                  if (id(${yambms_id}_script_eoc_timer).is_running()) id(${yambms_id}_script_eoc_timer).stop();
+                  if (id(${yambms_id}_script_cutoff_timer).is_running()) id(${yambms_id}_script_cutoff_timer).stop();
+                  // Balancing : the BMS is equalizing the cells
+                  if (id(${yambms_id}_equalizing).state) id(${yambms_id}_var_charge_status) = "Balancing";
+                  // Bulk
+                  else id(${yambms_id}_var_charge_status) = "Bulk";
+                }
+                // Cut-Off phase
+                else if (ms_now - ms_cutoff >= 10000) // 10s
                 {
                   ESP_LOGD("yambms_debug", "Entering the Cut-Off phase...");
 
@@ -792,20 +817,7 @@ interval:
                   else if (!id(${yambms_id}_script_cutoff_timer).is_running())
                     id(${yambms_id}_script_cutoff_timer).execute();
                 }
-                // Bulk phase
-                // The criteria check must succeed for 10s to ensure that
-                // these are not random/erroneous/false readings of the BMS
-                else if (ms_now - ms_bulk >= 10000) // 10s
-                {
-                  ESP_LOGD("yambms_debug", "Entering the Bulk phase...");
-                  // Stop timer
-                  if (id(${yambms_id}_script_eoc_timer).is_running()) id(${yambms_id}_script_eoc_timer).stop();
-                  if (id(${yambms_id}_script_cutoff_timer).is_running()) id(${yambms_id}_script_cutoff_timer).stop();
-                  // Balancing : the BMS is equalizing the cells
-                  if (id(${yambms_id}_equalizing).state) id(${yambms_id}_var_charge_status) = "Balancing";
-                  // Bulk
-                  else id(${yambms_id}_var_charge_status) = "Bulk";
-                }
+
               }
             }
             // Charging not allowed (BMS or YamBMS)
