@@ -1,5 +1,5 @@
-# Updated : 2026.02.07
-# Version : 1.2.5
+# Updated : 2026.03.23
+# Version : 1.2.6
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -29,14 +29,16 @@ text_sensor:
   # | YamBMS version                       |
   # +--------------------------------------+
   - platform: template
-    name: ${name} ${yambms_name} Running version
+    name: "Running version"
     id: ${yambms_id}_running_version
+    device_id: yambms_${yambms_id}
     icon: mdi:cogs
     entity_category: diagnostic
     update_interval: never
   - platform: template
-    name: ${name} ${yambms_name} Last version
+    name: "Last version"
     id: ${yambms_id}_last_version
+    device_id: yambms_${yambms_id}
     icon: mdi:new-box
     entity_category: diagnostic
     update_interval: never

@@ -1,5 +1,5 @@
-# Updated : 2026.02.11
-# Version : 1.1.1
+# Updated : 2026.03.23
+# Version : 1.1.2
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -43,7 +43,8 @@ switch:
   # DEMO switch
   - platform: template
     id: bms${bms_id}_switch_demo_charge_simulation
-    name: "BMS ${bms_id} DEMO charge simulation"
+    device_id: bms_${bms_id}
+    name: "DEMO charge simulation"
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true
     on_state:

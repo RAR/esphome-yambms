@@ -1,5 +1,5 @@
-# Updated : 2026.02.22
-# Version : 1.1.5
+# Updated : 2026.03.23
+# Version : 1.1.6
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -19,8 +19,9 @@
 
 select:
   - platform: template
-    name: "${name} ${yambms_name} Automatic Float Voltage"
+    name: "Automatic Float Voltage"
     id: ${yambms_id}_auto_float_mode
+    device_id: yambms_${yambms_id}
     options:
       - "Disabled"
       - "Follow"
@@ -36,8 +37,9 @@ select:
 
 number:
   - platform: template
-    name: "${name} ${yambms_name} Auto Float Voltage Step"
+    name: "Auto Float Voltage Step"
     id: ${yambms_id}_auto_float_step_v
+    device_id: yambms_${yambms_id}
     step: 0.1
     min_value: 0.1
     max_value: 0.5
@@ -50,8 +52,9 @@ number:
     entity_category: config
 
   - platform: template
-    name: "${name} ${yambms_name} Auto Float Update Interval"
+    name: "Auto Float Update Interval"
     id: ${yambms_id}_auto_float_interval
+    device_id: yambms_${yambms_id}
     step: 1
     min_value: 1
     max_value: 10
@@ -67,6 +70,7 @@ sensor:
   # Filter total voltage (max)
   - platform: template
     id: ${yambms_id}_auto_float_total_v
+    device_id: yambms_${yambms_id}
     update_interval: 30s
     filters:
       - max:
@@ -77,8 +81,9 @@ sensor:
   # | Auto Float Voltage Control           |
   # +--------------------------------------+
   - platform: template
-    name: "${name} ${yambms_name} Auto Float Voltage"
+    name: "Auto Float Voltage"
     id: ${yambms_id}_auto_float_v
+    device_id: yambms_${yambms_id}
     update_interval: 60s  # Keep this at 60s, otherwise "Auto Float Update Interval" won't work!
     unit_of_measurement: V
     device_class: voltage

@@ -1,4 +1,4 @@
-# Updated : 2026.02.27
+# Updated : 2026.03.23
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -50,11 +50,10 @@ api: # This YAML only works with the API
 # | Global Settings                      |
 # +--------------------------------------+
 substitutions:
-  # Name
-  friendly_name : 'YamBMS Display' # Prefix added in front of the `entity name`, also used to classify them.
-  hostname: 'yambms-display' # Name of your ESP32 registered on the IP network (DNS name, must be unique).
-
-
+  # This project uses the `sub-device` function of ESPHome to prefix entity names.
+  # This allows to group entities into logical devices that appear separately in Home Assistant.
+  hostname: 'yambms-display' # Name of your ESPHome node registered on the IP network (DNS name must be unique)
+  friendly_name : 'YamBMS Display' # Name of your board (prefix for board entities)
 
 # +--------------------------------------+
 # | Packages                             |
@@ -86,8 +85,8 @@ packages:
       - path: 'packages/board/board_options_display_lvgl_800x480_basic_blue_ha.yaml' # 800x480 basic blue display
       # - path: 'packages/board/board_options_display_lvgl_1280x720_Tab5_ha.yaml' # 1280x720 Tab5 display
         vars:
-          # Generally, the friendly_name of your YamBMS node is in lowercase; spaces are replaced by underscores.
-          entity_prefix: 'yambms' # 'yambms' by default
+          device_name: 'yambms' # The friendly_name of your YamBMS node is in lowercase; spaces are replaced by underscores
+          yambms_name: 'yambms_1' # The yambms_name of your YamBMS node is in lowercase; spaces are replaced by underscores
 
 
 

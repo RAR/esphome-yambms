@@ -1,5 +1,5 @@
-# Updated : 2026.02.22
-# Version : 2.5.4
+# Updated : 2026.03.23
+# Version : 2.5.5
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -39,7 +39,7 @@ esphome:
             
   devices:
     - id: canbus_${canbus_id}
-      name: "${canbus_name}"
+      name: "${yambms_name} ${canbus_name}"
 
 globals:
   - id: canbus${canbus_id}_send_canbus_data

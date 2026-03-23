@@ -1,5 +1,5 @@
-# Updated : 2026.02.22
-# Version : 1.1.6
+# Updated : 2026.03.23
+# Version : 1.1.7
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
 # YamBMS ( Yet another multi-BMS Merging Solution )
@@ -43,8 +43,9 @@ globals:
 
 switch:
   - platform: template
-    name: "${name} ${yambms_name} Temperature-based Current Limitation"
+    name: "Temperature-based Current Limitation"
     id: ${yambms_id}_switch_temperature_based_current_limitation
+    device_id: yambms_${yambms_id}
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true
     entity_category: config
