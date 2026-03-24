@@ -1,4 +1,4 @@
-# Updated : 2026.03.23
+# Updated : 2026.03.24
 # Version : 1.7.0
 # GitHub  : https://github.com/Sleeper85/esphome-yambms
 
@@ -237,7 +237,7 @@ views:
                 state_not: unavailable
             card:
               title: DEMO
-  - title: Control
+  - title: Settings
     cards:
       - type: entity-filter
         entities:
@@ -265,13 +265,6 @@ views:
         title: YamBMS - Charge / Discharge switch
       - type: entities
         entities:
-          - entity: switch.yambms_demo_automatic_charge_voltage
-            name: Automatic Charge Voltage
-          - entity: number.yambms_demo_auto_cvl_boost_charge_v
-            name: Auto CVL Boost Charge V.
-        title: YamBMS - Auto CVL
-      - type: entities
-        entities:
           - entity: sensor.yambms_demo_charging_status
             name: Charging Status
           - entity: sensor.yambms_demo_charging_instruction
@@ -289,66 +282,14 @@ views:
         title: YamBMS - Charging Settings
       - type: entities
         entities:
-          - entity: switch.yambms_demo_automatic_charge_current
-            name: Automatic Charge Current
-          - entity: switch.yambms_demo_automatic_discharge_current
-            name: Automatic Discharge Current
-        title: YamBMS - Auto CCL / DCL
-      - type: entities
-        entities:
-          - entity: select.yambms_demo_automatic_float_voltage
-            name: Automatic Float Voltage
-          - entity: sensor.yambms_demo_auto_float_voltage
-            name: Auto Float Voltage
-          - entity: number.yambms_demo_auto_float_update_interval
-            name: Update Interval
-          - entity: number.yambms_demo_auto_float_voltage_step
-            name: Voltage Step
-        title: YamBMS - Auto Float
-      - type: entities
-        entities:
-          - entity: switch.yambms_demo_automatic_eoc_current
-            name: Automatic EOC Current
-          - entity: sensor.yambms_demo_auto_eoc_status
-            name: Status
-          - entity: sensor.yambms_demo_auto_eoc_current
-            name: Required Current
-          - entity: number.yambms_demo_auto_eoc_target_hour
-            name: Target hour
-          - entity: number.yambms_demo_auto_eoc_target_minute
-            name: Target minute
-          - entity: number.yambms_demo_auto_eoc_correction
-            name: Current Correction
-          - entity: number.yambms_demo_auto_eoc_capacity_modifier
-            name: Capacity Modifier
-          - entity: number.yambms_demo_auto_eoc_increase_stop_hours
-            name: Stop hours
-          - entity: number.yambms_demo_auto_eoc_increase_stop_soc
-            name: Stop SoC
-        title: YamBMS - Auto EOC
-      - type: entities
-        entities:
-          - entity: switch.yambms_demo_automatic_soc_limit
-            name: Automatic SoC Limit
-          - entity: number.yambms_demo_auto_soc_limit
-            name: SoC Limit
-          - entity: number.yambms_demo_auto_soc_limit_hysteresis
-            name: SoC Limit Hysteresis
-          - entity: select.yambms_demo_auto_soc_limit_mode
-            name: Auto SoC Limit Mode
-          - entity: sensor.yambms_demo_auto_soc_limit_status
-            name: Auto SoC Limit Status
-        title: YamBMS - Auto SoC Limit
-      - type: entities
-        entities:
           - entity: number.yambms_demo_rebulk_soc
             name: Rebulk SoC
           - entity: number.yambms_demo_rebulk_v
             name: Rebulk V.
           - entity: number.yambms_demo_rebulk_days
             name: Rebulk Days
-          - entity: switch.yambms_demo_force_bulk_top_bal
-            name: Force Bulk (top bal)
+          - entity: switch.yambms_demo_force_bulk
+            name: Force Bulk
         title: YamBMS - ReBulk
       - type: entities
         entities:
@@ -444,6 +385,68 @@ views:
             state_not: unavailable
         card:
           title: YamBMS - DEBUG
+  - title: Auto Functions
+    cards:
+      - type: entities
+        entities:
+          - entity: switch.yambms_demo_automatic_charge_voltage
+            name: Automatic Charge Voltage
+          - entity: number.yambms_demo_auto_cvl_boost_charge_v
+            name: Auto CVL Boost Charge V.
+        title: YamBMS - Auto CVL
+      - type: entities
+        entities:
+          - entity: select.yambms_demo_automatic_float_voltage
+            name: Automatic Float Voltage
+          - entity: sensor.yambms_demo_auto_float_voltage
+            name: Auto Float Voltage
+          - entity: number.yambms_demo_auto_float_update_interval
+            name: Update Interval
+          - entity: number.yambms_demo_auto_float_voltage_step
+            name: Voltage Step
+        title: YamBMS - Auto Float
+      - type: entities
+        entities:
+          - entity: switch.yambms_demo_automatic_charge_current
+            name: Automatic Charge Current
+          - entity: switch.yambms_demo_automatic_discharge_current
+            name: Automatic Discharge Current
+        title: YamBMS - Auto CCL / DCL
+        show_header_toggle: false
+      - type: entities
+        entities:
+          - entity: switch.yambms_demo_automatic_soc_limit
+            name: Automatic SoC Limit
+          - entity: number.yambms_demo_auto_soc_limit
+            name: SoC Limit
+          - entity: number.yambms_demo_auto_soc_limit_hysteresis
+            name: SoC Limit Hysteresis
+          - entity: select.yambms_demo_auto_soc_limit_mode
+            name: Auto SoC Limit Mode
+          - entity: sensor.yambms_demo_auto_soc_limit_status
+            name: Auto SoC Limit Status
+        title: YamBMS - Auto SoC Limit
+      - type: entities
+        entities:
+          - entity: switch.yambms_demo_automatic_eoc_current
+            name: Automatic EOC Current
+          - entity: sensor.yambms_demo_auto_eoc_status
+            name: Status
+          - entity: sensor.yambms_demo_auto_eoc_current
+            name: Required Current
+          - entity: number.yambms_demo_auto_eoc_target_hour
+            name: Target hour
+          - entity: number.yambms_demo_auto_eoc_target_minute
+            name: Target minute
+          - entity: number.yambms_demo_auto_eoc_correction
+            name: Current Correction
+          - entity: number.yambms_demo_auto_eoc_capacity_modifier
+            name: Capacity Modifier
+          - entity: number.yambms_demo_auto_eoc_increase_stop_hours
+            name: Stop hours
+          - entity: number.yambms_demo_auto_eoc_increase_stop_soc
+            name: Stop SoC
+        title: YamBMS - Auto EOC
   - title: BMS
     type: sections
     max_columns: 3
