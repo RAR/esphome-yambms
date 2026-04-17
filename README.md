@@ -18,6 +18,11 @@
 > You don't have to import a shunt or balancer but you must import at least `one BMS`.
 > You can mix different `BMS` models, the only condition is that the `bms_id` are numbered in order starting from `1` !
 
+> [!IMPORTANT]
+> YamBMS only allows data merging from your **parallel-connected BMS units** !
+> YamBMS **does not work with serial-connected BMS units** !
+> YamBMS is not tied to a particular voltage, you can define the number of cells in series in your battery.
+
 > [!IMPORTANT]  
 > The most important thing for proper functioning of YamBMS is that **the voltage of your BMS is well calibrated**.
 > YamBMS logic is based on the `min_cell_voltage` and `max_cell_voltage` voltages of your `BMS`.
