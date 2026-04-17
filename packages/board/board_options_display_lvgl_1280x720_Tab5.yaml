@@ -412,13 +412,11 @@ lvgl:
                               color: 0xFFFFFF
                           - arc:
                               color: 0xFF3000
-                              length: 10
                               width: 40
                               start_value: -400
                               end_value: 0
                           - arc:
                               color: 0x00FF00
-                              length: 10
                               width: 40
                               start_value: 0
                               end_value: 400
@@ -472,13 +470,11 @@ lvgl:
                               color: 0xFFFFFF
                           - arc:
                               color: 0xFF3000
-                              length: 10
                               width: 40
                               start_value: -24
                               end_value: 0
                           - arc:
                               color: 0x00FF00
-                              length: 10
                               width: 40
                               start_value: 0
                               end_value: 24
