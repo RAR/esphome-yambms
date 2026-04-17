@@ -347,7 +347,6 @@ touchscreen:
 display:
   - platform: mipi_dsi
     id: my_display
-    rotation: 90
     dimensions:
       height: 1280
       width: 720
