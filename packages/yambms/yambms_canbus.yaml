@@ -298,7 +298,7 @@ canbus:
                   burst.push_back({0x400u + 0x20u * group + (uint32_t) (bms - 1), data});
                 }
               }
-              ESP_LOGD("canbus", "EG4: answering 0x405 with %u frames", (unsigned) burst.size());
+              ESP_LOGI("canbus", "EG4: answering 0x405 with %u frames", (unsigned) burst.size());
               if (!burst.empty()) id(canbus${canbus_id}_script_eg4_burst).execute();
 
 interval:
