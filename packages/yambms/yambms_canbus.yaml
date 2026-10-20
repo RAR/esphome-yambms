@@ -21,6 +21,7 @@ substitutions:
   canbus_status_led_id: "virtual_status_light" # The ID of the LED on your board used for this component
   canbus_link_timer_enabled: 'true' # Set it to 'false' if your inverter/charger is not sending ACK (can_id 0x305) every `1s` as specified by the protocol
   canbus_extended_ack: 'false' # Set to 'true' for enable extended 29-bit IDs for the ACK can_id 0x305 (required for Schneider XW Pro)
+  canbus_eg4_packs: "all" # EG4 protocol: BMS slots answered on this bus, "all" or e.g. "1,2,5"
 
 esphome:
   on_boot:
@@ -40,6 +41,23 @@ esphome:
               auto index = id(canbus${canbus_id}_protocol).active_index();
               return index.has_value() ? (int) index.value() : 0;
             };
+            // EG4 packs answered on this bus: "all" or a comma-separated list of bms_id
+            {
+              const std::string packs = "${canbus_eg4_packs}";
+              auto &selected = id(canbus${canbus_id}_eg4_selected);
+              selected.clear();
+              if (packs != "all") {
+                const char *p = packs.c_str();
+                while (*p) {
+                  char *end;
+                  const long bms = strtol(p, &end, 10);
+                  if (end == p) { p++; continue; }
+                  if (bms >= 1 && bms <= 32) selected.insert((int) bms);
+                  p = end;
+                }
+                ESP_LOGI("canbus", "EG4: %u BMS slot(s) selected for this bus", (unsigned) selected.size());
+              }
+            }
     - priority: -100.0
       then:
         - lambda: |-
@@ -78,6 +96,12 @@ globals:
   # frames and the Deye entry keeps index 6 wherever it sits in the option list.
   - id: canbus${canbus_id}_protocol_index
     type: std::function<int()>
+  # EG4 0x405 answer queued for sending: (can_id, data)
+  - id: canbus${canbus_id}_eg4_burst
+    type: std::vector<std::pair<uint32_t, std::vector<uint8_t>>>
+  # EG4: BMS slots sent on this bus (empty = all)
+  - id: canbus${canbus_id}_eg4_selected
+    type: std::set<int>
 
 select:
   - platform: template
@@ -175,6 +199,18 @@ script:
             id(canbus${canbus_id}_status).publish_state(false);               // Set CANBUS status to OFF
             id(inverter_com_status).publish_state(false);                     // Set Inverter com. status to OFF
           }
+  - id: canbus${canbus_id}_script_eg4_burst
+    mode: single
+    then:
+      - while:
+          condition:
+            lambda: return !id(canbus${canbus_id}_eg4_burst).empty();
+          then:
+            - lambda: |-
+                auto &burst = id(canbus${canbus_id}_eg4_burst);
+                id(${canbus_node_id}).send_data(burst.front().first, false, burst.front().second);
+                burst.erase(burst.begin());
+            - delay: 11ms
 
 # +--------------------------------------+
 # | Start CAN Handling                   |
@@ -208,6 +244,28 @@ canbus:
                 id(canbus${canbus_id}_inverter_heartbeat).publish_state(inverter_ack_interval_ms);
                 ESP_LOGI("canbus", "received can_id: 0x305 ack_interval %" PRIu32 " ms", inverter_ack_interval_ms);
               }
+
+      # 0x405 - EG4 inverter asks for per-pack data
+      - can_id: 0x405
+        then:
+          - lambda: |-
+              if (id(canbus${canbus_id}_protocol).current_option() != std::string("EG4")) return;
+              if (id(yambms${yambms_id}_var_initialized) == false) return;
+              auto &burst = id(canbus${canbus_id}_eg4_burst);
+              if (!burst.empty()) return;                    // still sending the last answer
+              const auto &selected = id(canbus${canbus_id}_eg4_selected);
+              for (auto &entry : id(yambms${yambms_id}_eg4_packs)) {
+                const int bms = entry.first;
+                if (bms < 1 || bms > 32) continue;
+                if (!selected.empty() && selected.count(bms) == 0) continue;
+                for (int group = 0; group < 7; group++) {
+                  std::vector<uint8_t> data(8);
+                  if (!entry.second(group, data.data())) break;   // not combinable: skip this BMS
+                  burst.push_back({0x400u + 0x20u * group + (uint32_t) (bms - 1), data});
+                }
+              }
+              ESP_LOGD("canbus", "EG4: answering 0x405 with %u frames", (unsigned) burst.size());
+          - script.execute: canbus${canbus_id}_script_eg4_burst
 
 interval:
   - interval: 24h
