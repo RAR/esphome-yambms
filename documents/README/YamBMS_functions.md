@@ -46,6 +46,9 @@ To answer only some BMS on a bus, set `canbus_eg4_packs` on that bus's `yambms_c
 include, e.g. `canbus_eg4_packs: "1,2,5"`. Default `"all"`. A value that selects no BMS (1-32)
 logs a warning and that bus does not answer `0x405`.
 
+With `YamBMS name` set to `Automatic`, the `EG4` protocol sends `EG4-LL` in `0x35E`, the name a real
+EG4-LL battery bank sends. `EG4-LL` can also be chosen manually.
+
 ## Charging settings
 
 ![Image](../../images/YamBMS_Charging_Settings.png "YamBMS_Charging_Settings")
