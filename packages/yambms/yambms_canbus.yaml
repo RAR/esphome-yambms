@@ -46,6 +46,7 @@ esphome:
               const std::string packs = "${canbus_eg4_packs}";
               auto &selected = id(canbus${canbus_id}_eg4_selected);
               selected.clear();
+              id(canbus${canbus_id}_eg4_all) = (packs == "all");
               if (packs != "all") {
                 const char *p = packs.c_str();
                 while (*p) {
@@ -55,7 +56,10 @@ esphome:
                   if (bms >= 1 && bms <= 32) selected.insert((int) bms);
                   p = end;
                 }
-                ESP_LOGI("canbus", "EG4: %u BMS slot(s) selected for this bus", (unsigned) selected.size());
+                if (selected.empty())
+                  ESP_LOGW("canbus", "EG4: canbus_eg4_packs '%s' selects no BMS (1-32) - this bus will not answer 0x405", packs.c_str());
+                else
+                  ESP_LOGI("canbus", "EG4: %u BMS slot(s) selected for this bus", (unsigned) selected.size());
               }
             }
     - priority: -100.0
@@ -99,9 +103,14 @@ globals:
   # EG4 0x405 answer queued for sending: (can_id, data)
   - id: canbus${canbus_id}_eg4_burst
     type: std::vector<std::pair<uint32_t, std::vector<uint8_t>>>
-  # EG4: BMS slots sent on this bus (empty = all)
+  # EG4: BMS slots sent on this bus (used when canbus_eg4_packs is not "all"; empty = none)
   - id: canbus${canbus_id}_eg4_selected
     type: std::set<int>
+  # EG4: true when canbus_eg4_packs is exactly "all"
+  - id: canbus${canbus_id}_eg4_all
+    type: bool
+    restore_value: no
+    initial_value: "false"
 
 select:
   - platform: template
@@ -254,10 +263,11 @@ canbus:
               auto &burst = id(canbus${canbus_id}_eg4_burst);
               if (!burst.empty()) return;                    // still sending the last answer
               const auto &selected = id(canbus${canbus_id}_eg4_selected);
+              const bool all = id(canbus${canbus_id}_eg4_all);
               for (auto &entry : id(yambms${yambms_id}_eg4_packs)) {
                 const int bms = entry.first;
                 if (bms < 1 || bms > 32) continue;
-                if (!selected.empty() && selected.count(bms) == 0) continue;
+                if (!all && selected.count(bms) == 0) continue;
                 for (int group = 0; group < 7; group++) {
                   std::vector<uint8_t> data(8);
                   if (!entry.second(group, data.data())) break;   // not combinable: skip this BMS
