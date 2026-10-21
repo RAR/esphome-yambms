@@ -39,9 +39,10 @@ EG4 inverters ask the battery for per-pack data with `can_id 0x405` (about once 
 With the `EG4` protocol YamBMS answers with seven frames per BMS, `0x400 + 0x20 × group + (bms_id − 1)`,
 11 ms apart and sent group by group like a real EG4 master: pack count and capacity, limits,
 voltage / current / SOC / SOH / cycles, max/min temperature and cell voltage with their sensor
-and cell numbers, and the name `Battery_ID_NN`. A BMS that cannot
-be combined (for example an offline BMS) is left out. Pack numbers are fixed by `bms_id`: BMS 3 is
-always sent as pack 3 (`Battery_ID_03`), whether or not BMS 2 is present.
+and cell numbers, firmware 2.13 (what an EG4-LL on Z02T13 reports), and the name
+`Battery_ID_NN`. A BMS that cannot be combined (for example an offline BMS) is left out.
+Pack numbers are fixed by `bms_id`: BMS 3 is always sent as pack 3 (`Battery_ID_03`), whether
+or not BMS 2 is present.
 
 To answer only some BMS on a bus, set `canbus_eg4_packs` on that bus's `yambms_canbus.yaml`
 include, e.g. `canbus_eg4_packs: "1,2,5"`. Default `"all"`. A value that selects no BMS (1-32)

@@ -80,11 +80,13 @@ esphome:
                   put16(4, id(bms${bms_id}_max_cell_voltage).state * 1000, 0, 65535);
                   put16(6, id(bms${bms_id}_min_cell_voltage).state * 1000, 0, 65535);
                   break;
-                case 4:  // Sensor / cell numbers; firmware unknown (0.0); then FF 00
+                case 4:  // Sensor / cell numbers; firmware minor, major; then FF 00
                   put8(0, id(bms${bms_id}_max_temperature_sensor).state, 255);
                   put8(1, id(bms${bms_id}_min_temperature_sensor).state, 255);
                   put8(2, id(bms${bms_id}_max_voltage_cell).state, 255);
                   put8(3, id(bms${bms_id}_min_voltage_cell).state, 255);
+                  m[4] = 13;  // Firmware 2.13, as an EG4-LL on Z02T13 reports; the inverter
+                  m[5] = 2;   // may ignore a pack reporting 0.0
                   m[6] = 0xFF;
                   break;
                 case 5:  // Name, first half
