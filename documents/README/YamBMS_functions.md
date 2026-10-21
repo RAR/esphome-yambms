@@ -37,8 +37,9 @@ Other configurations are possible, don't hesitate to communicate what works well
 
 EG4 inverters ask the battery for per-pack data with `can_id 0x405` (about once a minute).
 With the `EG4` protocol YamBMS answers with seven frames per BMS, `0x400 + 0x20 × group + (bms_id − 1)`,
-11 ms apart: limits, voltage / current / SOC / SOH / cycles, max/min temperature and cell
-voltage with their sensor and cell numbers, and the name `Battery_ID_NN`. A BMS that cannot
+11 ms apart and sent group by group like a real EG4 master: pack count and capacity, limits,
+voltage / current / SOC / SOH / cycles, max/min temperature and cell voltage with their sensor
+and cell numbers, and the name `Battery_ID_NN`. A BMS that cannot
 be combined (for example an offline BMS) is left out. Pack numbers are fixed by `bms_id`: BMS 3 is
 always sent as pack 3 (`Battery_ID_03`), whether or not BMS 2 is present.
 

@@ -288,16 +288,23 @@ canbus:
               if (!burst.empty()) return;                    // still sending the last answer
               const auto &selected = id(canbus${canbus_id}_eg4_selected);
               const bool all = id(canbus${canbus_id}_eg4_all);
+              // Encode every pack first: a BMS that cannot be combined is left out entirely.
+              std::vector<std::pair<int, std::vector<std::vector<uint8_t>>>> packs;
               for (auto &entry : id(yambms${yambms_id}_eg4_packs)) {
                 const int bms = entry.first;
                 if (bms < 1 || bms > 32) continue;
                 if (!all && selected.count(bms) == 0) continue;
-                for (int group = 0; group < 7; group++) {
-                  std::vector<uint8_t> data(8);
-                  if (!entry.second(group, data.data())) break;   // not combinable: skip this BMS
-                  burst.push_back({0x400u + 0x20u * group + (uint32_t) (bms - 1), data});
-                }
+                std::vector<std::vector<uint8_t>> frames(7, std::vector<uint8_t>(8));
+                bool ok = true;
+                for (int group = 0; group < 7 && ok; group++) ok = entry.second(group, frames[group].data());
+                if (ok) packs.push_back({bms, std::move(frames)});
               }
+              // Group 0 byte 4 is the number of packs in the answer
+              for (auto &pack : packs) pack.second[0][4] = (uint8_t) packs.size();
+              // Same order as a real EG4 master: group by group, packs in order within each group
+              for (int group = 0; group < 7; group++)
+                for (auto &pack : packs)
+                  burst.push_back({0x400u + 0x20u * group + (uint32_t) (pack.first - 1), pack.second[group]});
               ESP_LOGI("canbus", "EG4: answering 0x405 with %u frames", (unsigned) burst.size());
               if (!burst.empty()) id(canbus${canbus_id}_script_eg4_burst).execute();
 

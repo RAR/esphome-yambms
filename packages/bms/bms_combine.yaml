@@ -56,11 +56,11 @@ esphome:
               };
               memset(m, 0, 8);
               switch (group) {
-                case 0: {  // Constant on a real EG4 master; meaning not decoded yet
-                  const uint8_t constant[8] = {0x00, 0x00, 0x00, 0x00, 0x04, 0x18, 0x01, 0xC0};
-                  memcpy(m, constant, 8);
+                case 0:  // Bytes 0-3 alarms (none sent), byte 4 pack count (set by the 0x405 answer),
+                         // capacity 1 Ah, byte 7 0xC0 as a real EG4 master sends (meaning not decoded)
+                  put16(5, id(bms${bms_id}_battery_capacity).state, 0, 65535);
+                  m[7] = 0xC0;
                   break;
-                }
                 case 1:  // Bank limits, same as 0x351 (0.1 V / 0.1 A)
                   put16(0, id(yambms${yambms_id}_requested_charge_voltage).state * 10, 0, 65535);
                   put16(2, id(yambms${yambms_id}_requested_charge_current).state * 10, 0, 65535);
