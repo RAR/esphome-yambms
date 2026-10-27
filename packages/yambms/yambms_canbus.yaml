@@ -33,6 +33,9 @@ esphome:
             // Force register fault as default, will be updated once CANBUS is working
             // (true = fault)
             id(global_update_fault)(${CAT_INV_CAN_BUS}, ${canbus_id}, true);          
+            // Declare this bus for the EG4 inverter RSD latch
+            static_assert(${canbus_id} >= 0 && ${canbus_id} < 32, "canbus_id must be 0-31 for the EG4 RSD bitmask");
+            id(yambms${yambms_id}_var_canbus_bitmask) |= (1u << ${canbus_id});
             // Frame set index used by every protocol branch below
             id(canbus${canbus_id}_protocol_index) = []() -> int {
               const std::string option = id(canbus${canbus_id}_protocol).current_option();
@@ -212,6 +215,27 @@ binary_sensor:
         - lambda: |-
             // Pass the current state to the update function
             id(global_update_fault)(${CAT_INV_CAN_BUS}, ${canbus_id}, !x);
+  # EG4 inverter RSD (0x300 = 01) seen on this bus, latched until "Clear inverter RSD"
+  - platform: template
+    id: canbus${canbus_id}_inverter_rsd
+    device_id: canbus_${canbus_id}
+    name: "Inverter RSD"
+    device_class: safety
+    lambda: return (id(yambms${yambms_id}_var_inverter_rsd_bitmask) >> ${canbus_id}) & 1u;
+
+button:
+  - platform: template
+    name: "Clear inverter RSD"
+    id: canbus${canbus_id}_button_clear_inverter_rsd
+    device_id: canbus_${canbus_id}
+    icon: mdi:restart-alert
+    on_press:
+      - lambda: |-
+          auto &rsd = id(yambms${yambms_id}_var_inverter_rsd_bitmask);
+          if (!(rsd & (1u << ${canbus_id}))) return;
+          rsd &= ~(1u << ${canbus_id});
+          global_preferences->sync();
+          ESP_LOGW("canbus", "EG4: inverter RSD cleared on this bus");
 
 # +--------------------------------------+
 # | Scripts                              |
@@ -307,6 +331,21 @@ canbus:
                   burst.push_back({0x400u + 0x20u * group + (uint32_t) (pack.first - 1), pack.second[group]});
               ESP_LOGI("canbus", "EG4: answering 0x405 with %u frames", (unsigned) burst.size());
               if (!burst.empty()) id(canbus${canbus_id}_script_eg4_burst).execute();
+
+      # 0x300 - EG4 inverter rapid shutdown (RSD): 01 00 00 00 00 00 00 00, sent once just before it powers off
+      - can_id: 0x300
+        then:
+          - lambda: |-
+              if (id(canbus${canbus_id}_protocol).current_option() != std::string("EG4")) return;
+              if (x.empty() || x[0] != 0x01) {
+                ESP_LOGI("canbus", "EG4: 0x300 with byte 0 = 0x%02X ignored", x.empty() ? 0 : x[0]);
+                return;
+              }
+              auto &rsd = id(yambms${yambms_id}_var_inverter_rsd_bitmask);
+              if (rsd & (1u << ${canbus_id})) return;        // already latched
+              rsd |= (1u << ${canbus_id});
+              global_preferences->sync();                    // keep the latch if YamBMS loses power next
+              ESP_LOGW("canbus", "EG4: inverter RSD (0x300 = 01) - charging and discharging stopped until 'Clear inverter RSD'");
 
 interval:
   - interval: 24h

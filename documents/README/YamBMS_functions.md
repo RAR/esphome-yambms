@@ -51,6 +51,16 @@ logs a warning and that bus does not answer `0x405`.
 With `YamBMS name` set to `Automatic`, the `EG4` protocol sends `EG4-LL` in `0x35E`, the name a real
 EG4-LL battery bank sends. `EG4-LL` can also be chosen manually.
 
+### EG4 inverter rapid shutdown (CAN, protocol `EG4`)
+
+When an EG4 inverter enters rapid shutdown (RSD) it sends `can_id 0x300` = `01 00 00 00 00 00 00 00`
+once, just before it powers off. A real EG4 master opens its breakers on that frame. YamBMS cannot open
+the breakers of the BMS it combines, so instead it turns on `Inverter RSD` on that bus and turns off
+`Charging allowed` and `Discharging allowed`: every inverter and charger it feeds gets CCL and DCL 0.
+
+The RSD stays latched, also across a YamBMS reboot, until you press `Clear inverter RSD` on the bus that
+received it (the same idea as resetting the breakers by hand). Other `0x300` frames are logged and ignored.
+
 ## Charging settings
 
 ![Image](../../images/YamBMS_Charging_Settings.png "YamBMS_Charging_Settings")

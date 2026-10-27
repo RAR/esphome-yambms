@@ -49,6 +49,19 @@ globals:
   # Filled by bms_combine.yaml, sent by yambms_canbus.yaml when the inverter asks with 0x405.
   - id: yambms${yambms_id}_eg4_packs
     type: std::map<int, std::function<bool(int, uint8_t *)>>
+  # EG4 inverter RSD (0x300 = 01), one bit per CAN bus (bit canbus_id). Set by yambms_canbus.yaml,
+  # cleared with that bus's "Clear inverter RSD" button. Kept across reboots.
+  # While any bit is set, charging and discharging are not allowed.
+  - id: yambms${yambms_id}_var_inverter_rsd_bitmask
+    type: uint32_t
+    restore_value: yes
+    initial_value: '0'
+  # CAN buses declared in this config (bit canbus_id), set at boot by yambms_canbus.yaml. A latched
+  # RSD only counts for a bus that still exists, so removing a bus cannot leave a latch nobody can clear.
+  - id: yambms${yambms_id}_var_canbus_bitmask
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
   - id: yambms${yambms_id}_var_to_combine_bms_number
     type: int
     restore_value: no
@@ -760,10 +773,13 @@ interval:
             else
               id(yambms${yambms_id}_equalizing).publish_state(false);
 
+            // An inverter RSD (EG4 0x300) blocks charging and discharging until it is cleared
+            const bool inverter_rsd = (id(yambms${yambms_id}_var_inverter_rsd_bitmask) & id(yambms${yambms_id}_var_canbus_bitmask)) != 0;
+
             // +-----------------------------------------------+
             // | Charging allowed                              |
             // +-----------------------------------------------+
-            if (id(yambms${yambms_id}_switch_charging).state && id(yambms${yambms_id}_var_charging_allowed_counter) > 0)
+            if (id(yambms${yambms_id}_switch_charging).state && id(yambms${yambms_id}_var_charging_allowed_counter) > 0 && !inverter_rsd)
               id(yambms${yambms_id}_charging_allowed).publish_state(true);
             else
               id(yambms${yambms_id}_charging_allowed).publish_state(false);
@@ -771,7 +787,7 @@ interval:
             // +-----------------------------------------------+
             // | Discharging allowed                           |
             // +-----------------------------------------------+
-            if (id(yambms${yambms_id}_switch_discharging).state && id(yambms${yambms_id}_var_discharging_allowed_counter) > 0)
+            if (id(yambms${yambms_id}_switch_discharging).state && id(yambms${yambms_id}_var_discharging_allowed_counter) > 0 && !inverter_rsd)
               id(yambms${yambms_id}_discharging_allowed).publish_state(true);
             else
               id(yambms${yambms_id}_discharging_allowed).publish_state(false);
@@ -863,8 +879,11 @@ interval:
             // +-----------------------------------------------+
             // | Charging Logic                                |
             // +-----------------------------------------------+
+            // Inverter RSD (EG4 0x300) => Wait, ahead of Float / Force Float and the BMS charging logic,
+            // so the requested CCL stays 0 until the RSD is cleared
+            if ((id(yambms${yambms_id}_var_inverter_rsd_bitmask) & id(yambms${yambms_id}_var_canbus_bitmask)) != 0) id(yambms${yambms_id}_var_charge_status) = "Wait";
             // EOC => Float
-            if ((id(yambms${yambms_id}_var_charge_status) == "EOC") && (id(yambms${yambms_id}_switch_float).state)) id(yambms${yambms_id}_var_charge_status) = "Float";
+            else if ((id(yambms${yambms_id}_var_charge_status) == "EOC") && (id(yambms${yambms_id}_switch_float).state)) id(yambms${yambms_id}_var_charge_status) = "Float";
             // No Float => EOC
             else if ((id(yambms${yambms_id}_var_charge_status) == "Float") && (!id(yambms${yambms_id}_switch_float).state)) id(yambms${yambms_id}_var_charge_status) = "EOC";
             // Force Float

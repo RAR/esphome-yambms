@@ -8,6 +8,7 @@
 
 * CANBUS 2.7.0 : Added `EG4` protocol (LuxPower frames + per-pack answer to `0x405`, `EG4-LL` BMS name), see [documentation](../YamBMS_functions.md#eg4-per-pack-data-can-protocol-eg4)
 * BMS combine 1.9.0 : register EG4 per-pack frame encoders
+* CANBUS 2.7.0 / YamBMS core : the `EG4` protocol latches the inverter rapid shutdown (`0x300` = `01`) in a new `Inverter RSD` binary sensor and turns off charging and discharging until `Clear inverter RSD` is pressed, see [documentation](../YamBMS_functions.md#eg4-inverter-rapid-shutdown-can-protocol-eg4)
 
 * YamBMS 1.8.0 :
   * Set esphome `min_version` to `2026.8.0`
